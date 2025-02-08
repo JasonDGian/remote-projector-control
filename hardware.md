@@ -1,7 +1,7 @@
 # 📔 About the hardware.
 In this section, I will provide a detailed overview of the hardware used in this project, along with any valuable insights gathered during the development process.
 
-## 📌 The main board.
+## 📌 The main board - ESP32.
 The board used in the project is a **Keyestudio ESP32-WROOM-32 Module Core Board**. 
 The Keyestudio ESP32-WROOM-32 is a versatile development board designed for IoT and smart home applications. It integrates the ESP32-WROOM-32 module, offering both Wi-Fi and Bluetooth connectivity, and is compatible with the Arduino IDE.
 
@@ -13,7 +13,8 @@ Among the most popular options:
 - JavaScript
 - Lua
      
-<h2>Keyestudio ESP32-WROOM-32 XX0H32 Specifications</h2>
+### 🔹 Keyestudio ESP32-WROOM-32 XX0H32 Specifications.
+    
 <table>
     <tr>
         <th>Feature</th>
@@ -22,45 +23,53 @@ Among the most popular options:
     </tr>
     <tr>
         <td>Microcontroller</td>
-        <td>ESP32-WROOM-32</td>
+        <td>ESP-WROOM-32 module</td>
         <td rowspan="9"><img src="https://github.com/user-attachments/assets/7a27f529-b2a2-4130-9c9a-a6fa5d1f1406" alt="ESP32 Front View"></td>
     </tr>
     <tr>
-        <td>Core</td>
-        <td>Dual-core Tensilica Xtensa LX6</td>
-    </tr>
-    <tr>
-        <td>Clock Speed</td>
-        <td>Up to 240 MHz</td>
-    </tr>
-    <tr>
-        <td>Flash Memory</td>
-        <td>4MB (varies by model)</td>
-    </tr>
-    <tr>
-        <td>SRAM</td>
-        <td>520 KB</td>
-    </tr>
-    <tr>
-        <td>Wi-Fi</td>
-        <td>802.11 b/g/n (2.4 GHz)</td>
-    </tr>
-    <tr>
-        <td>Bluetooth</td>
-        <td>Bluetooth 4.2 + BLE</td>
-    </tr>
-    <tr>
-        <td>USB to Serial Chip</td>
+        <td>USB to Serial Port Chip</td>
         <td>CP2102-GMR</td>
     </tr>
     <tr>
         <td>Operating Voltage</td>
-        <td>5V</td>
+        <td>DC 5V</td>
     </tr>
     <tr>
-        <td>Logic Level Voltage</td>
-        <td>3.3V</td>
+        <td>Operating Current</td>
+        <td>80mA (average)</td>
+    </tr>
+    <tr>
+        <td>Current Supply</td>
+        <td>500mA (Minimum)</td>
+    </tr>
+    <tr>
+        <td>Operating Temperature Range</td>
+        <td>-40℃ ~ +85℃</td>
+    </tr>
+    <tr>
+        <td>WiFi Mode</td>
+        <td>Station/SoftAP/SoftAP+Station/P2P</td>
+    </tr>
+    <tr>
+        <td>WiFi Protocol</td>
+        <td>802.11 b/g/n/e/i (802.11n, speed up to 150 Mbps)</td>
+    </tr>
+    <tr>
+        <td>WiFi Frequency Range</td>
+        <td>2.4 GHz ~ 2.5 GHz</td>
+    </tr>
+    <tr>
+        <td>Bluetooth Protocol</td>
+        <td>Conforms to Bluetooth v4.2 BR/EDR and BLE standards</td>
         <td rowspan="8"><img src="https://github.com/user-attachments/assets/ded84c16-4fc8-44f1-9782-d8fbb186db21" alt="ESP32 Back View"></td>
+    </tr>
+    <tr>
+        <td>Dimensions</td>
+        <td>55mm*26mm*13mm</td>
+    </tr>
+    <tr>
+        <td>Weight</td>
+        <td>9.3g</td>
     </tr>
     <tr>
         <td>GPIO Pins</td>
@@ -82,12 +91,38 @@ Among the most popular options:
         <td>I2C / SPI / UART</td>
         <td>Yes (multiple)</td>
     </tr>
-    <tr>
-        <td>Operating Temperature</td>
-        <td>-40°C to +85°C</td>
-    </tr>
-    <tr>
-        <td>Programming Support</td>
-        <td>Arduino IDE, MicroPython, ESP-IDF</td>
-    </tr>
 </table>
+
+
+
+
+
+## 📌 The comunication interface - RS232 to TTL converter.
+An **RS232 to TTL converter** is a device used to interface two types of serial communication protocols: **RS232** and **TTL** (Transistor-Transistor Logic). These protocols operate at different voltage levels and require conversion to communicate effectively. **This device was essential in this project to enable communication between the ESP32 and the projector that needed to be controlled.** The **RS232 to TTL converter** changes the voltage levels from **RS232** signals to **TTL-compatible** levels and vice versa, allowing devices with different voltage levels to communicate with each other.
+   
+<p>
+     <img align="right" src="https://github.com/user-attachments/assets/2f611e96-63cf-4b75-9c10-582fe3969af4">
+</p>
+   
+### Breakdown of RS232 and TTL:
+1. **RS232**:
+   - It is an older standard used for serial communication between devices (e.g., PCs, modems, printers).
+   - RS232 signals are **higher voltage** (typically between **±12V**).
+   - **Data transmission** is done using voltage levels: logic “1” is typically represented by **+12V** (marking), and logic “0” by **-12V** (spacing).
+
+2. **TTL (Transistor-Transistor Logic)**:
+   - TTL is a logic level standard used in microcontrollers and embedded systems.
+   - It uses **lower voltage levels** (typically **0V for logic “0”** and **3.3V or 5V for logic “1”**).
+   - It is commonly used in modern electronics, especially for communication between microcontrollers like the ESP32 and other peripherals.
+    
+#### Key Features:
+- **RS232 to TTL Conversion**: The converter translates the voltage levels between the two standards (RS232 and TTL).
+- **Bidirectional**: Typically, these converters work in both directions, allowing communication in and out of a device.
+- **Level Shifting**: It adjusts the voltage so that the signals are lowered to a level that a microcontroller (3.3V or 5V) can understand.
+
+>[!Note]
+> My specific unit features a chip called the MAX3232 ESE+2416, which is responsible for converting the voltage levels between RS232 and TTL, ensuring reliable communication between the ESP32 and the projector. Tha pin layout in my unit can be seen in the picture.
+>
+>       
+>![srs232 psd](https://github.com/user-attachments/assets/d7b5191f-313b-4f90-afbf-9783b6a8657a)
+    
