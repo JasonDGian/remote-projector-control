@@ -49,7 +49,9 @@ sudo dmesg | grep cp201x
 ```
     
 ![imagen](https://github.com/user-attachments/assets/971c7a81-e77c-482d-8f74-9b8e158052d5)
-
+   
+---
+   
 ## 📍 Permission denied on output to board.
 Since i work on a Linux Arch device and not a Microsoft Windows, i encountered a problem related to permissions to directly write on ports. This was a pain in the ass to diagnose and easy to resolve.
 To cut it short, the solution was to add my user `jaydee` to the group that handles the direct access to the host ports. .
@@ -102,7 +104,9 @@ void loop() {
 }
 
 ```
-
+   
+---
+   
 ## 📍 The IDE Serial monitor is not displaying characters correctly.
 When wworking with output to the serial monitor for testing, the result was not what I expected. All I got was a mess of garbled characters.
 
@@ -114,8 +118,50 @@ To check the BAUD rate of my specific unity, i ran the command `sudo dmesg | gre
 ![imagen](https://github.com/user-attachments/assets/0227d738-3ccf-43ec-bd60-c6b42f461615)
 
 TURNS OUT, I only needed to push the 'EN' button on the board, which resets the board to make it work propperly.
-
+   
+---
+   
 ## 📍 Connecting to the wifi network as a client.
-In order to use the wifi capabilities we must first connect to a wifi network. 
-    
+To utilize the Wi-Fi capabilities, the device must first connect to a Wi-Fi network. To achieve this, I modified an example script to report connection status directly to the serial monitor. After making the necessary changes, I verified the device's successful connection by checking its presence on my router, ensuring the program and device were functioning correctly.
+```c++
+#include <WiFi.h>
+
+void setup() {
+
+  Serial.begin(115200);
+  WiFi.begin("mySSID", "myPass");
+  Serial.print("Connecting to WiFi");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+
+  Serial.print("\nConnected to the wifi.");
+  Serial.print("\nIP ADDRESS: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+
+  if ((WiFi.status() == WL_CONNECTED)) {
+    Serial.print("\nConnection online.");
+    Serial.flush();
+  } else {
+    Serial.print("\nConnection lost.");
+    Serial.flush();
+  }
+  delay(2000);
+}
+```
+
+And once the serial monitor was configured i pushed the EN button and i got the expected result.    
+   
+![imagen](https://github.com/user-attachments/assets/c36515af-1969-4d9b-ab33-2c6f0eb9d82c)
+   
+---
+   
 ## 📍 Finding the MAC address of the device.
+Once the device was connected to my network, I simply searched for it among the devices listed in my Wireless LAN users.    
+    
+![imagen](https://github.com/user-attachments/assets/7ad795ea-f9d1-4880-b2ad-af1d1d1354ae)

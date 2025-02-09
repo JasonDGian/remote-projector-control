@@ -6,17 +6,48 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the composite key for a Command entity, uniquely identifying
+ * a command by the projector model, the action it performs, and the binary instruction.
+ * 
+ * <p>This class is used in conjunction with JPA to define a composite key 
+ * for the corresponding Command entity.</p>
+ * 
+ * <p>The composite key consists of:
+ * <ul>
+ *   <li>{@code modelName} - The projector model for which the command is used.</li>
+ *   <li>{@code action} - The specific action that the command triggers.</li>
+ *   <li>{@code command} - The binary instruction sent to the projector.</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>Annotations:</p>
+ * <ul>
+ *   <li>{@link Data} - Generates boilerplate code like getters, setters, and {@code toString()}.</li>
+ *   <li>{@link NoArgsConstructor} - Creates a no-argument constructor.</li>
+ *   <li>{@link AllArgsConstructor} - Creates a constructor with all fields as parameters.</li>
+ * </ul>
+ * 
+ * @author David Jason Gianmoena [ https://github.com/JasonDGian  ] 
+ * @version 1.0
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommandId
 {
-	// Model for which the command is employed.
+    /** 
+     * The projector model associated with the command. 
+     */
 	private ProjectorModel modelName;
 	
-	// Action that the related command will perform.
+    /** 
+     * The action that the command is intended to perform.
+     */
 	private Action action;
 	
-	// Binary instruction sent to the projector to perform an action.
+    /** 
+     * The binary instruction sent to the projector to execute the action. 
+     */
 	private String command;
 }

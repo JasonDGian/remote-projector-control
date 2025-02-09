@@ -7,15 +7,37 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
+/**
+ * Represents an action that can be performed on a projector.
+ *
+ * <p>Examples of actions include:
+ * <ul>
+ *   <li>"Power On"</li>
+ *   <li>"Power Off"</li>
+ *   <li>"Switch Input"</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>Annotations:</p>
+ * <ul>
+ *   <li>{@link Entity} - Marks this class as a JPA entity.</li>
+ *   <li>{@link Data} - Generates boilerplate code like getters, setters, and {@code toString()}.</li>
+ *   <li>{@link NoArgsConstructor} - Creates a no-argument constructor.</li>
+ *   <li>{@link AllArgsConstructor} - Creates a constructor with all fields as parameters.</li>
+ * </ul>
+ *
+ * @author David Jason Gianmoena [ https://github.com/JasonDGian ]
+ * @version 1.0
+ */
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Action
 {
-	// Name of the action to perform. 
-	// E.g: "Power off"
+	/** 
+	 * The name of the action (e.g., "Power Off", "Volume Up"). 
+	 */
 	@Id
 	@Column( name = "action_name" )
 	private String actionName;
