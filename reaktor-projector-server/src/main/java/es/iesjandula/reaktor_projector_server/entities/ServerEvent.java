@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
  * executed and by which device, ensuring efficient task processing and status tracking.
  * </p>
  * 
- * @author David Jason Gianmoena [ https://github.com/JasonDGian ]
+ * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
  * @version 1.0
  */
 @Entity

@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
  * and is used as a composite primary key via the {@link ProjectorId}.
  * </p>
  * 
- * @author David Jason Gianmoena [ https://github.com/JasonDGian ]
+ * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
  * @version 1.0
  */
 @Entity

@@ -33,7 +33,7 @@ import lombok.NoArgsConstructor;
  * <li>{@link Serializable} - Required for JPA composite keys.</li>
  * </ul>
  * 
- * @author David Jason Gianmoena [ https://github.com/JasonDGian ]
+ * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
  * @version 1.0
  */
 @Data

@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
  *   <li>{@link AllArgsConstructor} - Creates a constructor with all fields as parameters.</li>
  * </ul>
  *
- * @author David Jason Gianmoena [ https://github.com/JasonDGian ]
+ * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
  * @version 1.0
  */
 @Entity
