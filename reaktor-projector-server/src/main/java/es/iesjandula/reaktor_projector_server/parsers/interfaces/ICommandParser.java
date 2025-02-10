@@ -24,5 +24,5 @@ public interface ICommandParser
      * @param scanner The {@link Scanner} containing the Commands data to parse.
      * @throws ProjectorServerException If an error occurs during parsing or processing.
      */
-    public void parseCommands(Scanner scanner) throws ProjectorServerException;
+    public String parseCommands(Scanner scanner) throws ProjectorServerException;
 }

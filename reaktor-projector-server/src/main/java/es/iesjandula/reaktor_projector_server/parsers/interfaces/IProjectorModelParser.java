@@ -25,5 +25,5 @@ public interface IProjectorModelParser
      * @param scanner The {@link Scanner} containing the projector model data to parse.
      * @throws ProjectorServerException If an error occurs during parsing or processing.
      */
-    public void parseProjectorModels(Scanner scanner) throws ProjectorServerException;
+    public String parseProjectorModels(Scanner scanner) throws ProjectorServerException;
 }

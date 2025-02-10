@@ -71,10 +71,20 @@ public class ICommandPaserImpl implements ICommandParser
      * @throws ProjectorServerException If an error occurs during parsing or database operations.
      */
     @Override
-    public void parseCommands(Scanner scanner) throws ProjectorServerException
+    public String parseCommands(Scanner scanner) throws ProjectorServerException
     {
-        log.debug("Command parsing process initiated.");
+        log.debug("Commands parsing process initiated.");
+        
+        // Check if the CSV file is empty
+        if (!scanner.hasNextLine())
+        {
+            log.error("The received file is empty. No commands to parse.");
+            throw new ProjectorServerException(493, "Empty CSV file received in parseCommands() method.");
+        }
 
+        int recordsSkipped = 0;
+        int recordsSaved = 0;
+        
         // Ignore the first line of the CSV file (column headers).
         scanner.nextLine();
 
@@ -83,6 +93,12 @@ public class ICommandPaserImpl implements ICommandParser
             
             // File fields should always be -> action_name, command, model_name
             String[] csvFields = scanner.nextLine().split(Constants.CSV_DELIMITER);
+            
+            if (csvFields.length < 3) {
+                log.error("Skipping malformed or empty CSV line.");
+                recordsSkipped++;
+                continue;
+            }
             
             String actionName = csvFields[0]; 
             String command = csvFields[1];
@@ -113,10 +129,15 @@ public class ICommandPaserImpl implements ICommandParser
                 currentCommand.setModelName(currentModel);
                 currentCommand.setCommand(command);
                 commandRepo.saveAndFlush(currentCommand);
+                recordsSaved++;
             } else {
-                log.debug("Command with ID '{}' already exists in the database. Skipping execution.", currentCommandId);
+                log.debug("Command with ID '{}' already exists in the database. Skipping it now.", currentCommandId);
+                recordsSkipped++;
             }
         }
+        String message = "Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
+        //log.info(message);
+		return message;
     }
     
     /**

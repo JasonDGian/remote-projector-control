@@ -43,9 +43,21 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
      * @throws ProjectorServerException If an error occurs during the parsing or database operation.
      */
     @Override
-    public void parseProjectorModels(Scanner scanner) throws ProjectorServerException
+    public String parseProjectorModels(Scanner scanner) throws ProjectorServerException
     {
         log.debug("Projector Models parsing process initiated.");
+       
+        // Check if the CSV file is empty
+        if (!scanner.hasNextLine())
+        {
+            log.error("The received file is empty. No projectors to parse.");
+            throw new ProjectorServerException(491, "Empty CSV file received in parseProjectors() method.");
+        }
+        
+        String message;
+        
+        int recordsSkipped = 0;
+        int recordsSaved = 0;
 
         // Ignores the first line of the CSV file (column headers).
         scanner.nextLine();
@@ -57,6 +69,12 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
             
             // Read the model name from the CSV line
             String modelName = scanner.nextLine().trim();
+            
+            if (modelName.isBlank()) {
+                log.error("Skipping malformed or empty CSV line.");
+                recordsSkipped++;
+                continue;
+            }
 
             // Check if the projector model already exists in the database
             Optional<ProjectorModel> modelOptional = projectorModelRepo.findById(modelName);
@@ -65,6 +83,7 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
             if (modelOptional.isPresent())
             {
                 log.debug("Projector Model '{}' already present in DB, skipping to next record.", modelName);
+                recordsSkipped++;
             }
             else
             {
@@ -73,7 +92,12 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
                 ProjectorModel newModel = new ProjectorModel();
                 newModel.setModelName(modelName);
                 projectorModelRepo.save(newModel); // Save the new model
+                recordsSaved++;
             }
         }
+        
+        message = "Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
+        //log.info(message);
+		return message;
     }
 }
