@@ -1,21 +1,28 @@
 spring:
-  jpa.hibernate.ddl-auto: create # Configura cómo se debe gestionar el esquema de la base de datos.
+  jpa:
+    hibernate:
+      ddl-auto: create
   datasource:
-    url: jdbc:mysql://localhost:3306/proyectores # URL de conexión a la base de datos MySQL.
-    username: root # Nombre de usuario para conectarse a la base de datos.
-    password: 1234 # Contraseña correspondiente al usuario especificado.
-    hikari: # Hikari es un mecanismo de eficiencia de conexiones. Cnoocido como "Pool de conexiones".
-    connection-timeout: 60000 # Establece el tiempo máximo de espera en milisegundos (60 segundos) para obtener una conexión antes de lanzar un error.
-    maximum-pool-size: 5 # Especifica el número máximo de conexiones permitidas en el pool de conexiones simultáneas.
+    url: jdbc:mysql://localhost:3306/proyectores
+    username: root
+    password: 1234
+    hikari:
+      connection-timeout: 60000
+      maximum-pool-size: 5
 
 server:
-  port: 8085 # Define el puerto en el que se ejecutará la aplicación Spring Boot.
+  port: 8085
 
-logging: #Sección de configuración del sistema de logs en Spring.
+logging:
   level:
-    com.iesjandula: INFO # Define el nivel de log para el paquete 'com.iesjandula'(recursivo).
+    root: INFO # Ensures all logs are visible in the console
+    es.iesjandula: DEBUG # Your specific package logs will be in DEBUG mode
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n" # Console log format
   file:
-    name: C:\logs\proyectores.log # ruta y el nombre del archivo donde se guardarán los logs.
-    max-size: 1MB # Define el tamaño máximo que puede tener el archivo de log antes de que se cree uno nuevo.
-    max-history: 20 # Especifica el número máximo de archivos históricos de logs que se guardarán.
-    total-size-cap: 10MB # Indica el tamaño total máximo permitido para todos los archivos de log acumulados.
+    name: C:\logs\proyectores.log
+  logback:
+    rollingpolicy:
+      max-size: 1MB
+      max-history: 20
+      total-size-cap: 10MB

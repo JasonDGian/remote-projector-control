@@ -50,4 +50,9 @@ public class CommandId
      * The binary instruction sent to the projector to execute the action. 
      */
 	private String command;
+	
+	@Override
+	public String toString(){
+		return this.action.getActionName() + " | " + this.modelName.getModelName() + " | " + this.command;
+	}
 }

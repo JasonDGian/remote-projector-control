@@ -3,7 +3,7 @@
 - Recogidos datos sobre la placa ESP32 y el interfaz RS232
 - Configurado el entorno de desarrollo -> Depuirados problemas.
 - Primeras pruebas de conexión a wifi.    
-**4 horas.**
+**TIEMPO DEDICADO: 4 horas.**
 
 # Dia 2
 - Averiguado pinout adaptador SR232
@@ -14,4 +14,10 @@
 
 ![imagen](https://github.com/user-attachments/assets/58db3fd5-9e9a-4899-8846-53eda922b04a)
 
-**5 horas**
+**TIEMPO DEDICADO: 5 horas**
+
+# Dia 2
+- Finalizado el mecanismo de parseo de comandos.
+- Creados los logs del mecanismo de parseo de comandos.
+
+**TIEMPO DEDICADO: 2 horas**

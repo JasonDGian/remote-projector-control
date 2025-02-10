@@ -165,3 +165,17 @@ And once the serial monitor was configured i pushed the EN button and i got the 
 Once the device was connected to my network, I simply searched for it among the devices listed in my Wireless LAN users.    
     
 ![imagen](https://github.com/user-attachments/assets/7ad795ea-f9d1-4880-b2ad-af1d1d1354ae)
+
+## 📍 Data permanent storage.
+Another challenge encountered is the reduced capacity of the microcontroller , which made it difficult to store the needed data on the device. For this reason it was necessary the addition of another module that would allow the use of an sd card as a storage device.
+
+What i had to find out is the module comunication protocol, the module pinout and [...]
+- The protocol used for comunication is SPI.
+- The pinout [...]
+- 
+
+>[!IMPORTANT]
+>The microSD card must be formatted in **`FAT32`**
+
+
+https://randomnerdtutorials.com/esp32-microsd-card-arduino/

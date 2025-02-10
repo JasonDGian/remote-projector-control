@@ -45,4 +45,18 @@ public class ProjectorModel
      */
 	@OneToMany(mappedBy = "model")
 	private List<Projector> associatedProjectors;
+	
+    /**
+     * Constructs a new ProjectorModel with the specified model name.
+     * <p>
+     * This constructor is used when creating a projector model object with only 
+     * the model name, without initializing the associated projectors list.
+     * </p>
+     *
+     * @param modelName The unique identifier for the projector model (e.g., 'V11H979056').
+     *                  This name serves as the primary key for the model.
+     */
+	public ProjectorModel ( String modelName ){
+		this.modelName = modelName;
+	}
 }
