@@ -8,8 +8,10 @@
 # Dia 2
 - Averiguado pinout adaptador SR232
 - Creada aplicacion base con dependencias de proyecto necesarias.
-- Creado esquema de base de datos aplicado en aplicacion base.
+- Revisión y normalización de modelo relacional.
+- Creado esquema de base de datos en aplicacion base.
+- Documentadas entidades Java con comentarios Javadoc.
 
 ![imagen](https://github.com/user-attachments/assets/58db3fd5-9e9a-4899-8846-53eda922b04a)
 
-**3.5 horas**
+**5 horas**
