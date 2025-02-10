@@ -16,8 +16,9 @@
 
 **TIEMPO DEDICADO: 5 horas**
 
-# Dia 2
+# Dia 3
 - Finalizado el mecanismo de parseo de comandos.
 - Creados los logs del mecanismo de parseo de comandos.
+- Redactadas las primeras tareas o "roadmap".
 
-**TIEMPO DEDICADO: 2 horas**
+**TIEMPO DEDICADO: 3 horas**
