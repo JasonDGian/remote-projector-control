@@ -26,3 +26,13 @@
 - Añadidos endpoints de testeo para los mecanismos de parseo.
 
 **TIEMPO DEDICADO: 5 horas**
+
+# Dia 4 - 11/02/25
+- Mejora de mecanismo de parseo implementando manejo de errores.
+- Mejora de puntos de ataque implementando manejo de errores.
+- Modulariza la validacion de los ficheros CSV de los puntos de ataque.
+- Arregla configuración de registro de eventos (log).
+- Añade documento de referencia para excepciones personalizadas (exceptions-document.txt).
+- Añadidos comentarios y javadoc en controlador REST y actualizados comentarios de implementaciones parseadores con nuevas caracteristicas.
+
+**TIEMPO DEDICADO: 3 horas**
