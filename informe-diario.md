@@ -34,5 +34,6 @@
 - Arregla configuración de registro de eventos (log).
 - Añade documento de referencia para excepciones personalizadas (exceptions-document.txt).
 - Añadidos comentarios y javadoc en controlador REST y actualizados comentarios de implementaciones parseadores con nuevas caracteristicas.
+- Creado primer draft del mecanismo de creación de eventos en BBDD.
 
-**TIEMPO DEDICADO: 3 horas**
+**TIEMPO DEDICADO: 4 horas**
