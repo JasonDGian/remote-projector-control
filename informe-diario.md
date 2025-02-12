@@ -37,3 +37,17 @@
 - Creado primer draft del mecanismo de creación de eventos en BBDD.
 
 **TIEMPO DEDICADO: 4 horas**
+
+# Dia 5 - 12/02/25
+- Se añaden métodos toString() personalizados en todas las entidades para evitar llamadas recurrentes y excepciones de puntero nulo.
+- Se corrige el ID en la entidad ServerEvent para usar el tipo envolvente Long con valor autogenerado.
+- Se corrigen los comentarios Javadoc en la clase CommandId para mayor consistencia y claridad.
+- Se actualiza el archivo exceptions-document.txt con las nuevas excepciones definidas.
+- Se reactiva el repositorio ServerEventRepository, que estaba previamente desactivado debido a todas las líneas comentadas.
+- Se reorganizan los métodos de los endpoints en el controlador de Projector para mejorar la claridad y estructura.
+- Se eliminan comentarios en español innecesarios y obsoletos para mejorar la legibilidad.
+- Se introduce el primer borrador del método createServerEvent en el endpoint /server-events.
+- Se redactan dos endpoints adicionales para las acciones del MicroController con comentarios bosquejo.
+- Se introducen nuevos constantes como ejemplo temporal para los estados de los eventos. (por definir de manera final).
+
+**TIEMPO DEDICADO: 3 horas**
