@@ -54,4 +54,14 @@ public class Command
 	 */
 	@Id
 	private String command;
+	
+	@Override
+	public String toString() {
+	    return new StringBuilder()
+	        .append("CommandID - action: ").append(this.action == null ? "N/A" : this.action.getActionName())
+	        .append(" | modelName: ").append(this.modelName == null ? "N/A" : this.modelName.getModelName())
+	        .append(" | command: ").append(this.command == null ? "N/A" : this.command)
+	        .toString();
+	}
+
 }

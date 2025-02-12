@@ -59,4 +59,12 @@ public class ProjectorModel
 	public ProjectorModel ( String modelName ){
 		this.modelName = modelName;
 	}
+	
+	@Override
+	public String toString() {
+	    return new StringBuilder()
+	        .append("ProjectorModel - modelName: ").append(this.modelName == null ? "N/A" : this.modelName)
+	        .toString();
+	}
+
 }

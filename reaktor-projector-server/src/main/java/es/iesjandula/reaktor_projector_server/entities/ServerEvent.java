@@ -1,7 +1,10 @@
 package es.iesjandula.reaktor_projector_server.entities;
 
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinColumns;
@@ -35,7 +38,8 @@ public class ServerEvent
      * Unique identifier for the server event.
      */
 	@Id
-	private long eventId;
+	@GeneratedValue( strategy = GenerationType.AUTO )
+	private Long eventId;
 
     /**
      * The command associated with this event.
@@ -89,4 +93,16 @@ public class ServerEvent
      * </p>
      */
 	private String actionStatus;
+	
+	@Override
+	public String toString(){
+		return new StringBuilder()
+				.append("ServerEvent - eventId: ").append(this.eventId)
+				.append(" | command:").append( this.command == null ? "N/A" : this.command.toString())
+				.append(" | projector: ").append( this.projector == null ? "N/A" : this.projector.toString())
+				.append(" | user: ").append(this.user.isBlank() ? "N/A" : this.user)
+				.append(" | dateTime: ").append(this.dateTime == null ? "N/A" : this.dateTime.toString())
+				.append(" | actionStatus: ").append( this.actionStatus.isBlank() ? "N/A" : this.actionStatus )
+				.toString();
+	}
 }

@@ -16,7 +16,7 @@ server:
 logging:
   level:
     root: INFO # Ensures all logs are visible in the console
-    es.iesjandula: INFO # Your specific package logs will be in DEBUG mode
+    es.iesjandula: DEBUG # Your specific package logs will be in DEBUG mode
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n" # Console log format
   file:

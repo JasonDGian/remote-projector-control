@@ -42,4 +42,11 @@ public class Action
 	@Column( name = "action_name" )
 	private String actionName;
 	
+	@Override
+	public String toString(){
+		return new StringBuilder()
+		        .append("Action - actionName: ").append(this.actionName == null ? "N/A" : this.actionName)
+		        .toString();
+	}
+	
 }

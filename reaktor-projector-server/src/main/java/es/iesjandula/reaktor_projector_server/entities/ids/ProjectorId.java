@@ -50,4 +50,12 @@ public class ProjectorId
 	 * The classroom where the projector is located. 
 	 */
 	private String classroom;
+	
+	@Override
+	public String toString() {
+	    return new StringBuilder()
+	        .append("ProjectorId - model: ").append(this.model == null ? "N/A" : this.model.getModelName())
+	        .append(" | classroom: ").append(this.classroom == null  ? "N/A" : this.classroom)
+	        .toString();
+	}
 }

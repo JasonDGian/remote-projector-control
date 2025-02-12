@@ -54,4 +54,13 @@ public class Projector
      */
 	@Id
 	private String classroom;
+	
+	@Override
+	public String toString() {
+	    return new StringBuilder()
+	        .append("Projector - model: ").append(this.model == null ? "N/A" : this.model.getModelName())
+	        .append(" | classroom: ").append(this.classroom == null ? "N/A" : this.classroom)
+	        .toString();
+	}
+
 }

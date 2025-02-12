@@ -1,6 +1,8 @@
 package es.iesjandula.reaktor_projector_server.rest;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Scanner;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,13 +10,28 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import es.iesjandula.reaktor_projector_server.dtos.ServerEventDto;
+import es.iesjandula.reaktor_projector_server.entities.Action;
+import es.iesjandula.reaktor_projector_server.entities.Command;
+import es.iesjandula.reaktor_projector_server.entities.Projector;
+import es.iesjandula.reaktor_projector_server.entities.ProjectorModel;
+import es.iesjandula.reaktor_projector_server.entities.ServerEvent;
+import es.iesjandula.reaktor_projector_server.entities.ids.CommandId;
+import es.iesjandula.reaktor_projector_server.entities.ids.ProjectorId;
 import es.iesjandula.reaktor_projector_server.parsers.interfaces.ICommandParser;
 import es.iesjandula.reaktor_projector_server.parsers.interfaces.IProjectorModelParser;
 import es.iesjandula.reaktor_projector_server.parsers.interfaces.IProjectorParser;
+import es.iesjandula.reaktor_projector_server.repositories.IActionRepositories;
+import es.iesjandula.reaktor_projector_server.repositories.ICommandRepository;
+import es.iesjandula.reaktor_projector_server.repositories.IProjectorModelRepository;
+import es.iesjandula.reaktor_projector_server.repositories.IProjectorRepository;
+import es.iesjandula.reaktor_projector_server.repositories.IServerEventRepository;
+import es.iesjandula.reaktor_projector_server.utils.Constants;
 import es.iesjandula.reaktor_projector_server.utils.ProjectorServerException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,8 +48,50 @@ public class ProjectorController
 
 	@Autowired
 	IProjectorModelParser projectorModelsParser;
+	
+	@Autowired
+	IServerEventRepository serverEventRepository;
+	
+	@Autowired
+	IProjectorRepository projectorRepository;
+	
+	@Autowired
+	IProjectorModelRepository projectorModelRepository;
+	
+	@Autowired
+	ICommandRepository commandRepository;
+	
+	@Autowired
+	IActionRepositories actionRepositories;
+	
+	// -----------------------  HELPING METHODS ------------------------------------
+	
+	/**
+	 * Validates the uploaded CSV file.
+	 * <p>
+	 * This method checks if the file is empty and if the content type is valid for CSV files.
+	 * It throws a {@link ProjectorServerException} with appropriate error codes if the validation fails.
+	 * </p>
+	 *
+	 * @param file The uploaded file to be validated.
+	 * @throws ProjectorServerException if the file is empty or has an invalid content type.
+	 */
+	private void validateFile(MultipartFile file) throws ProjectorServerException {
+	    // Check if the file is empty
+	    if (file.isEmpty()) {
+	        throw new ProjectorServerException(490, "ERROR: Empty CSV file received.");
+	    }
 
+	    String contentType = file.getContentType();
+	    
+	    // Check if the file content type is valid for CSV files
+	    if (contentType == null || !contentType.startsWith("text/csv")) {
+	        throw new ProjectorServerException(498, "ERROR: Unsupported format. Expected format CSV.");
+	    }
+	}
 
+	// -----------------------  PARSING ENDPOINTS ------------------------------------
+	
 	/**
 	 * Handles the upload and parsing of a CSV file containing model data.
 	 * <p>
@@ -83,11 +142,6 @@ public class ProjectorController
 	    }
 	}
 
-
-	// metodo de parseo de acciones
-	// Metodo de parseo de modelos
-	// parseo comandos
-	// parseo de proyectores (unidades)
 	@Transactional
 	@PostMapping("/parse-commands")
 	public ResponseEntity<?> parseCommands(@RequestParam("commands.csv") MultipartFile file)
@@ -187,27 +241,137 @@ public class ProjectorController
 		}
 	}
 		
-	/**
-	 * Validates the uploaded CSV file.
-	 * <p>
-	 * This method checks if the file is empty and if the content type is valid for CSV files.
-	 * It throws a {@link ProjectorServerException} with appropriate error codes if the validation fails.
-	 * </p>
-	 *
-	 * @param file The uploaded file to be validated.
-	 * @throws ProjectorServerException if the file is empty or has an invalid content type.
-	 */
-	private void validateFile(MultipartFile file) throws ProjectorServerException {
-	    // Check if the file is empty
-	    if (file.isEmpty()) {
-	        throw new ProjectorServerException(490, "ERROR: Empty CSV file received.");
-	    }
 
-	    String contentType = file.getContentType();
-	    
-	    // Check if the file content type is valid for CSV files
-	    if (contentType == null || !contentType.startsWith("text/csv")) {
-	        throw new ProjectorServerException(498, "ERROR: Unsupported format. Expected format CSV.");
-	    }
+	// -----------------------  SERVER EVENT ENDPOINTS ------------------------------------
+		
+	/**
+	 * Endpoint para que los usuarios envien las acciones al servidor.
+	 * Este endpoint almacena en la tabla EVENTOS SERVIDOR una accion que luego el microcontrolador 
+	 * recuperara para saber que decirle al proyector que debe de hacer.
+	 * Para guardar el evento es necesario:
+	 * ID Evento - Automaticamente generado.
+	 * Fecha evento - Generada mediante el metodo.
+	 * Usuario Autor - Parametro de la petición.
+	 * Comando - Comando que se quiere enviar al proyector.
+	 * Proyector - Proyecto al que se quiere enviar la orden.
+	 */ 
+	@PostMapping( value = "/server-events" )
+	public ResponseEntity<?> createServerEvent( @RequestBody(required = true) ServerEventDto serverEventDto ){
+		try {
+			
+		String projectorModelName = serverEventDto.getProjectorDto().getModel();
+		
+		String projectorClassroom = serverEventDto.getProjectorDto().getClassroom();
+		
+		String commandModelName = serverEventDto.getCommandDto().getModelName();
+		
+		String commandActionName = serverEventDto.getCommandDto().getAction();
+		
+		String commandCommand = serverEventDto.getCommandDto().getCommand();
+		
+		log.info("Call to '/server-events' received with parameters: \n"
+				+ " - projector: " + projectorModelName.toString() + " - " + projectorClassroom.toString() 
+				+ "\n - command: " + commandModelName.toString() + " - " + commandActionName.toString() + " - " + commandCommand.toString());
+			
+		// Comprobar que el modelo del proyector exista
+		Optional<ProjectorModel> projectorModelOpt = this.projectorModelRepository.findById(projectorModelName);
+		ProjectorModel projectorModelEntity = projectorModelOpt.orElseThrow( () -> new ProjectorServerException(494, "The projector model '" + projectorModelName +"' does not exist." ) );
+		log.debug("PROJECTOR MODEL RETRIEVED: " + projectorModelEntity.toString() );
+		
+		// Comprobar que el proyector exista.
+		ProjectorId projectorId = new ProjectorId();
+		projectorId.setClassroom(projectorClassroom);
+		projectorId.setModel(projectorModelEntity);
+		
+		Optional<Projector> projectorOpt = this.projectorRepository.findById(projectorId);
+		Projector projectorEntity = projectorOpt.orElseThrow( ()-> new ProjectorServerException(494, "The projector model '" + projectorModelName + " in classroom " + projectorClassroom + "' does not exist." ));
+		log.debug("PROJECTOR UNIT RETRIEVED: " + projectorEntity.toString());	
+		
+		// Comprobar que la acción exista.
+		Optional<Action> actionOpt = this.actionRepositories.findById(commandActionName);
+		Action actionEntity = actionOpt.orElseThrow( ()-> new ProjectorServerException(494, "The given action '" + commandActionName + "' does not exist." ) );
+		log.debug("COMMAND ACTION RETRIEVED: " + actionEntity.toString());
+		
+		
+		// Comprobar que el modelo del comando exista.
+		Optional<ProjectorModel> commandProjectorModelOpt = this.projectorModelRepository.findById(commandModelName);
+		ProjectorModel commandProjectorModelEntity = commandProjectorModelOpt.orElseThrow( () -> new ProjectorServerException(494, "The projector model '" + commandModelName +"' does not exist." ) );
+		log.debug("COMMAND MODEL RETRIEVED: " + commandProjectorModelEntity.toString());
+		
+		// comprobar que la orden exista.
+		CommandId commandId = new CommandId();
+		commandId.setAction(actionEntity);
+		commandId.setModelName(commandProjectorModelEntity);
+		commandId.setCommand(commandCommand);
+		
+		Optional<Command> commandOpt = this.commandRepository.findById(commandId);
+		Command commandEntity = commandOpt.orElseThrow( () -> new ProjectorServerException(494, "The command '" + commandId + "' does not exist." ) ); 
+		log.debug("COMMAND RETRIEVED: " + commandEntity.toString());
+		
+		// comprobar que la orden enviada corresponda al proyector enviado
+		log.debug("Checking for models coincidence..");
+		if ( !projectorModelEntity.equals(commandProjectorModelEntity ) ){
+			String message = "The model " + commandModelName + " and the model " + projectorModelName + " are not the same.";
+			log.error(message);
+			throw new ProjectorServerException(495, message );
+		}
+		
+		// Tomar fecha actual.
+		LocalDateTime dateTime = LocalDateTime.now();
+		
+		
+		// Tomar usuario.
+		// TODO: Crear funcionamiento usuarios.
+		String user = "TO DO";
+		
+		// Asignar estado por defecto.
+		// TODO: Establecer los estados que puede tener un evento.
+		
+		// Crear nuevo objeto server event y asignar valores.
+		ServerEvent serverEventEntity = new ServerEvent();
+		
+		
+		serverEventEntity.setCommand(commandEntity);
+		serverEventEntity.setProjector(projectorEntity);
+		serverEventEntity.setActionStatus(Constants.EVENT_STATUS_PENDING);
+		serverEventEntity.setDateTime(dateTime);
+		serverEventEntity.setUser(user);
+		
+		// Guardar objeto en bbdd.
+		this.serverEventRepository.saveAndFlush(serverEventEntity);
+		
+		return ResponseEntity.ok().body("All done and okay");
+		
+		} 
+		catch ( ProjectorServerException ex ){
+			// do stuff
+			log.error( "Error during server event creation: " + ex.getMessage() );
+			return ResponseEntity.badRequest().body(ex.getMapError());
+		}
 	}
+
+	/**
+	 * Endpoint que recibe una peticion por parte de un microcontrolador y devuelve una acción a realizar.
+	 * 
+	 * Este endpoint espera parametros utilizados para identificar el proyector con el que el micro está asociado.
+	 * Esta identificacion es necesaria para poder saber que orden debe de servir el endpoint al microcontrolador
+	 * para que este la re-envie al proyector.
+	 * 
+	 * Enviar al micro: ID accion + Orden
+	 * 
+	 */
+	public String serveCommandToController(){
+		return null;
+	}
+	
+	/**
+	 * Endpoint que recibe una peticion por parte de un microcontrolador y actualiza el estado de una accion.
+	 * 
+	 * Para saber que orden actualizar, recibir por parametro ID Accion a actualizar y codigo de estado.
+	 */
+	public void updateServerEventStatus(){
+		
+	}
+
+
 }

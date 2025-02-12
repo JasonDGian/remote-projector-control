@@ -11,7 +11,9 @@ public final class Constants
      */
 	public static final String CSV_DELIMITER = ",";
 	
+	public static final String EVENT_STATUS_PENDING = "PENDING";
+	public static final String EVENT_STATUS_2 = "";
+	public static final String EVENT_STATUS_3 = "";
+	public static final String EVENT_STATUS_4 = "";
 	
-	
-		
 }
