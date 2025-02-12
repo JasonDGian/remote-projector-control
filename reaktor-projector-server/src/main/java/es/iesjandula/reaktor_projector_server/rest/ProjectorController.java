@@ -9,12 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import es.iesjandula.reaktor_projector_server.dtos.CommandDto;
 import es.iesjandula.reaktor_projector_server.dtos.ServerEventDto;
 import es.iesjandula.reaktor_projector_server.entities.Action;
 import es.iesjandula.reaktor_projector_server.entities.Command;
@@ -371,6 +373,15 @@ public class ProjectorController
 	 */
 	public void updateServerEventStatus(){
 		
+	}
+	
+	@GetMapping( value = "/micro-greeting")
+	public ResponseEntity<?> acknowledgeMicro(){
+		log.info("Call received on /micro-greeting");
+		
+		//CommandDto cdto = new CommandDto("1","2","3");
+		
+		return ResponseEntity.ok().body("turn-on");
 	}
 
 

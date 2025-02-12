@@ -14,6 +14,7 @@ Among the most popular options:
 - Lua
      
 ### 🔹 Keyestudio ESP32-WROOM-32 XX0H32 Specifications.
+One important thing to mention is that the ESP32 typically has a 4MB flash chip on board. This flash memory is partitioned to allocate space for different purposes: the application (program) storage, the SPIFFS (or LittleFS) for file storage, and optionally, an OTA partition for **wireless firmware updates**. It is crucial to configure the partition scheme properly to allocate the correct amount of space for each purpose, depending on your project’s needs.
     
 <table>
     <tr>
@@ -93,7 +94,7 @@ Among the most popular options:
     </tr>
 </table>
 
-
+![imagen](https://github.com/user-attachments/assets/7390d1e3-e9a5-4d1f-b9ea-9e96863f41ca)
 
 
 
@@ -124,5 +125,6 @@ An **RS232 to TTL converter** is a device used to interface two types of serial 
 > My specific unit features a chip called the MAX3232 ESE+2416, which is responsible for converting the voltage levels between RS232 and TTL, ensuring reliable communication between the ESP32 and the projector. Tha pin layout in my unit can be seen in the picture.
 >
 >       
->![srs232 psd](https://github.com/user-attachments/assets/d7b5191f-313b-4f90-afbf-9783b6a8657a)
+>![srs232](https://github.com/user-attachments/assets/3cce1348-7e50-454f-9153-d7c20fea84fa)
     
+

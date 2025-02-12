@@ -51,3 +51,17 @@
 - Se introducen nuevos constantes como ejemplo temporal para los estados de los eventos. (por definir de manera final).
 
 **TIEMPO DEDICADO: 3 horas**
+
+
+# Dia 6 - 13/02/25
+- Redacción de la introducción para el anteproyecto.
+- Elaboración de esquemas y material explicativo complementario para el documento del proyecto.
+- Redacción preliminar del análisis del proyecto.
+- Definición inicial de los objetivos del proyecto.
+- Recopilación de datos sobre las conexiones del dispositivo.
+- Investigación del mecanismo de comunicación entre UART y RS232.
+- Análisis del módulo transceptor y del chip MAX232.
+- Estudio de las funcionalidades y el pinout de la placa ESP32.
+- Inicio de configuración para la comunicación en el sketch arduino ESP32.
+
+**TIEMPO DEDICADO: 6 horas**

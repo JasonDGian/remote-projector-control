@@ -159,12 +159,103 @@ And once the serial monitor was configured i pushed the EN button and i got the 
    
 ![imagen](https://github.com/user-attachments/assets/c36515af-1969-4d9b-ab33-2c6f0eb9d82c)
    
+In a later revision I added two leds that indicate the status of the connection.
+
+
+
 ---
    
 ## 📍 Finding the MAC address of the device.
 Once the device was connected to my network, I simply searched for it among the devices listed in my Wireless LAN users.    
     
 ![imagen](https://github.com/user-attachments/assets/7ad795ea-f9d1-4880-b2ad-af1d1d1354ae)
+
+## 📍 Sending request to the server.
+I only put these observations here because I had no clue how to do this given that is my first time working with this Micro.
+To send a request to an HTTP server we need to follow these steps.
+- Include the needed library.
+- Create the client object.
+- Initialize the object with the connection string (endpoint url).
+- Send the request with the chosen request method, assign to a variable the result of the call.
+- Do whatever is needed with the result.
+
+**Include the necessary library.**    
+The HTTPClient library provides the necessary functions to send requests and receive responses from an HTTP server.
+```c++
+#include <HTTPClient.h>
+```
+
+**Create the HTTP client object.**   
+We need to create an instance of `HTTPClient`, which will be used to make HTTP requests (GET, POST, etc.).
+```c++
+// Create the client object.
+HTTPClient http;
+```
+   
+**Initialize the object with the connection string.**
+```c++
+// Initialize the HTTP request by specifying the target URL.
+http.begin("http://192.168.1.100:8085/micro-greeting");
+```
+
+**Send the request and process the result.**   
+Now we send the request using the `.GET()` method and store the response code.
+```c++
+// Send the GET request and store the response code.
+int httpResponseCode = http.GET();
+
+// Print the response code.
+Serial.print("HTTP Response Code: ");
+Serial.println(httpResponseCode);
+```
+
+## 📍 Handle API responses of JsonObjects.
+By default we wont be able to handle the json objects we receive. To fix that we can use the `ArduinoJson` library to parse JSON.
+
+First we must install the library in our IDE.
+Go to `Tools` -> `Manage Libraries...` or click on the Books icon in the left hand panel.   
+    
+![imagen](https://github.com/user-attachments/assets/a39e1373-dba4-4611-8b74-bb496095c729)
+
+Search for `ArduinoJson` and click on `Install`.  
+   
+![imagen](https://github.com/user-attachments/assets/2a36c1c3-3feb-43dd-a877-16f4a24ea48d)
+
+
+Then we include the needed library to parse Json Objects.
+```c++
+#include <ArduinoJson.h>
+```
+
+**Get the response code**   
+```c++
+int httpResponseCode = http.GET();
+```
+
+**Fetch the JSON Response**   
+This retrieves the raw JSON string returned by the server.
+```c++
+String payload = http.getString();  // Get response as a string
+```
+
+**Parse JSON using ArduinoJson**  
+```c++
+// Allocates memory to store JSON. You can increase this if you want or need to.
+DynamicJsonDocument doc(1024);
+// Parses the JSON string into a usable object.
+DeserializationError error = deserializeJson(doc, payload);
+```
+
+**Extract and access the data**   
+```c++
+const char* message = doc["message"];
+long timestamp = doc["timestamp"];
+bool success = doc["success"];
+```
+
+## 📍 Changing partition configuration to improve Storage and Memory size.
+
+## 📍 Optimization of Json objects to reduce RAM impact and memory fragmentation.
 
 ## 📍 Data permanent storage.
 Another challenge encountered is the reduced capacity of the microcontroller , which made it difficult to store the needed data on the device. For this reason it was necessary the addition of another module that would allow the use of an sd card as a storage device.
