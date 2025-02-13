@@ -63,5 +63,11 @@
 - Análisis del módulo transceptor y del chip MAX232.
 - Estudio de las funcionalidades y el pinout de la placa ESP32.
 - Inicio de configuración para la comunicación en el sketch arduino ESP32.
+- Redaccion de apuntes sobre la comunicacion de UART y RS232. 
+- Sketch ejemplo de conexión y comunicacion (sin pruebas).
+- Actualización de informacion sobre le hardware y correccion sobre algunos apuntes de RS232.
+- Creación de primera version del endpoint de respuesta a Micro con tarea.
+- Diseño de la query de recuperacion de tareas para proyectores.
+- Creacion de nuevo DTO simplificado para eventos servidor.
 
-**TIEMPO DEDICADO: 6 horas**
+**TIEMPO DEDICADO: 10 horas**

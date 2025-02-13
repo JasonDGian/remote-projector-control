@@ -7,5 +7,5 @@ import es.iesjandula.reaktor_projector_server.entities.ids.CommandId;
 
 public interface ICommandRepository extends JpaRepository<Command, CommandId >
 {
-
+	
 }

@@ -2,6 +2,7 @@ package es.iesjandula.reaktor_projector_server.rest;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import es.iesjandula.reaktor_projector_server.dtos.CommandDto;
 import es.iesjandula.reaktor_projector_server.dtos.ServerEventDto;
+import es.iesjandula.reaktor_projector_server.dtos.SimplifiedServerEventDto;
 import es.iesjandula.reaktor_projector_server.entities.Action;
 import es.iesjandula.reaktor_projector_server.entities.Command;
 import es.iesjandula.reaktor_projector_server.entities.Projector;
@@ -362,7 +364,26 @@ public class ProjectorController
 	 * Enviar al micro: ID accion + Orden
 	 * 
 	 */
-	public String serveCommandToController(){
+	@GetMapping( value = "/server-events")
+	public String serveCommandToController( @RequestParam(required = true) String projectorModel, @RequestParam(required = true) String projectorClassroom  ){
+		
+		// TODO ESTO PROVISIONAL.
+		
+		Projector projector = new Projector();
+		projector.setClassroom("0.01");
+		projector.setModel( this.projectorModelRepository.findById("Epson EB-S41").get() );
+		
+		String actionStatus = Constants.EVENT_STATUS_PENDING;
+		
+		// recupear el ultimo comando para el modelo y aula especificado
+		List<SimplifiedServerEventDto> simpleEvent = this.serverEventRepository.findMostRecentCommandOpen(projector, actionStatus);
+		
+		log.debug(simpleEvent.toString());
+		
+		if ( simpleEvent.size() > 0 ){
+			return simpleEvent.get(0).toString();
+		}
+		
 		return null;
 	}
 	
