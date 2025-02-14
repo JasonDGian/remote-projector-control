@@ -128,3 +128,49 @@ An **RS232 to TTL converter** is a device used to interface two types of serial 
 >![srs232](https://github.com/user-attachments/assets/3cce1348-7e50-454f-9153-d7c20fea84fa)
     
 
+## 📌 The mass storage - MicroSD Module
+This module is perfect for adding mass storage to the project, allowing me to store and retrieve data from a microSD card. It is designed for use with microcontrollers, and communicates via a 4-pin SPI (Serial Peripheral Interface), which is widely supported across various microcontroller platforms. This makes it a versatile and easy-to-implement solution for integrating external storage into the project.
+
+The microSD card module connects to the ESP32 using the default SPI pins. **Each pin on the module is clearly labeled, making it easy to identify and connect to the corresponding pins on the ESP32**, especially when referencing the manufacturer's documentation. **Powering the module is simple, as both the ESP32 and the `LC Technology MicroSD Module` operate at 3.3V**, eliminating the need for any level shifting between the two devices.
+
+This unit is a LC Technology MicroSD Module, a widely used and reliable component. It is compatible with most projects designed for microSD cards, and its functionality will likely work seamlessly with other equivalent modules. The module is compact and easy to integrate into your hardware setup.
+
+>[!NOTE]
+>The module operates at 3.3V and that the ESP32 is also 3.3V compatible, so there's no need for a level shifter between the two (which is a common concern with other microcontrollers).
+
+<table>
+  <tr>
+    <th>MicroSD Card Module</th>
+    <th>ESP32</th>
+    <th>Top side</th>
+    <th>Bottom side</th>
+  </tr>
+  <tr>
+    <td>3V3</td>
+    <td>3.3V</td>
+    <td rowspan="6"><img src="https://github.com/user-attachments/assets/2d517703-273e-46cf-9843-b3f56b074c7a" alt="Image 1" width="300"></td>
+    <td rowspan="6"><img src="https://github.com/user-attachments/assets/b9d3420f-26ef-4e08-9700-2a3ea5d3ee13" alt="Image 2" width="300"></td>
+  </tr>
+  <tr>
+    <td>CS</td>
+    <td>GPIO 5</td>
+  </tr>
+  <tr>
+    <td>MOSI</td>
+    <td>GPIO 23</td>
+  </tr>
+  <tr>
+    <td>CLK</td>
+    <td>GPIO 18</td>
+  </tr>
+  <tr>
+    <td>MISO</td>
+    <td>GPIO 19</td>
+  </tr>
+  <tr>
+    <td>GND</td>
+    <td>GND</td>
+  </tr>
+</table>
+
+

@@ -71,3 +71,13 @@
 - Creacion de nuevo DTO simplificado para eventos servidor.
 
 **TIEMPO DEDICADO: 10 horas**
+
+# Dia 7 - 14/02/25
+- Inevstigar protocolo SPI para comunicacion de SD con ESP.
+- Apuntes sobre interfaz SPI y hardware modulo MicroSD.
+- Actualizacion de tareas.
+- Elaboración esquema de cableado.
+- Elaboración sketch de prueba interfaz SPI
+- Pruebas de funcionamiento con tarjeta SD mediante test-sketch arduino.
+
+**TIEMPO DEDICADO: 3.3 horas**

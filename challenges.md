@@ -254,19 +254,148 @@ bool success = doc["success"];
 ```
 
 ## 📍 Changing partition configuration to improve Storage and Memory size.
+The ESP32's 4MB flash memory stores firmware, SPIFFS/LittleFS files (e.g., SSL certificates, configs), and NVS data (WiFi credentials, settings). If OTA updates are enabled, space is reserved for new firmware. A small portion is used for the bootloader and partition management. In my case OTA will not be a funcionality that will be used so I can choose a different partition scheme which grants more space for LittleFS and my program. 
+
+>[!TIP]
+>To select a new partition scheme, click on `Tools` > `Partition Scheme` > `{Desired partition}`.
+
+![imagen](https://github.com/user-attachments/assets/06fa7569-6017-4160-96ab-9aac3be0406a)
+
+
+## 📍 LittleFS would not mount.
+After partitioning and giving it a go, for some reason the mounting operation for the FS failed constantly.  This happens because the flash memory must be formatted at least once before it is used.    
+To format the flash memory use this instruction:
+   
+```c++
+LittleFS.begin(true)
+```
+   
+This instruction will format the file system and then try to initialize it.
+
+A good idea is, when possible, try adding a fallback initialization with a format operation included such as this:   
+   
+```c++
+  // Initialize LittleFS without formatting.
+  if (!LittleFS.begin()) {
+    debugln("Failed to mount LittleFS. Formatting now.");
+    // Initialize trying to format.
+    if (!LittleFS.begin(true)) {
+      debugln("Failed to mount LittleFS even after formatting.");
+    }
+  }
+  debugln("LittleFS mounted successfully.");
+```
+
+**Detailed Explanation:**    
+- **`LittleFS.begin()`:** This tries to mount the LittleFS filesystem. If the filesystem is not mounted or initialized correctly (for example, if it's corrupted or missing), it will fail.
+- **`LittleFS.begin(true)`:** By passing true as an argument, you are telling the function to force formatting the filesystem before trying to initialize it. So, if the filesystem cannot be mounted, it will automatically try to format the partition and then initialize it.
 
 ## 📍 Optimization of Json objects to reduce RAM impact and memory fragmentation.
 
-## 📍 Data permanent storage.
-Another challenge encountered is the reduced capacity of the microcontroller , which made it difficult to store the needed data on the device. For this reason it was necessary the addition of another module that would allow the use of an sd card as a storage device.
-
-What i had to find out is the module comunication protocol, the module pinout and [...]
-- The protocol used for comunication is SPI.
-- The pinout [...]
-- 
-
->[!IMPORTANT]
->The microSD card must be formatted in **`FAT32`**
-
+## 📍 Storing data into the flash memory (non-volatile storage).
+To achieve this objective I used `LittleFS_esp32` library.
+Thiss library allowed me to mount an extremely lightweight file system on the ESP32 flash memory. To get it to work I had to install the library and include it in the project before using any functionality.
+   
+![imagen](https://github.com/user-attachments/assets/1d5b3c96-4fbc-4119-9714-bce55c0b73b7)
+    
 
 https://randomnerdtutorials.com/esp32-microsd-card-arduino/
+
+
+## 📍 Storing the SSL certificate into the flash memory of the device.
+To make certain requests the device needed an SSL certificate and this had to be stored in the flash memory of the device.
+
+For this I used the LittleFS which is a file system that allows to store files in the flash memory, including my SSL certificate.
+This would allow me to upload the SSL certificate as a file to the flash filesystem, then access it in my application.
+
+The SSL update mechanism i wanted to employ is the following:
+The device turns on, checks the memory for an SSL, if it exits, it compares it to the one stored in the SD card, if the one in the SD card is newer, copies and overwrites the one present in the device.
+
+```c++
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <SD.h>
+#include <LittleFS.h>
+
+// Your Wi-Fi credentials
+const char* ssid = "your-SSID";
+const char* password = "your-PASSWORD";
+
+// SSL certificate filenames
+const char* sdCertFile = "/cert.pem";  // SSL certificate stored on the SD card
+const char* littleFSCertFile = "/cert.pem";  // The same SSL certificate to be stored in LittleFS
+
+WiFiClientSecure client;
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Initialize LittleFS
+  if (!LittleFS.begin()) {
+    Serial.println("Failed to mount LittleFS");
+    return;
+  }
+
+  // Initialize SD card
+  if (!SD.begin()) {
+    Serial.println("SD Card initialization failed");
+    return;
+  }
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("WiFi connected");
+
+  // Read certificate from SD card
+  File sdCert = SD.open(sdCertFile, FILE_READ);
+  if (!sdCert) {
+    Serial.println("Failed to open certificate from SD card");
+    return;
+  }
+
+  // Open a file on LittleFS to store the certificate
+  File littleFSFile = LittleFS.open(littleFSCertFile, "w");
+  if (!littleFSFile) {
+    Serial.println("Failed to open file for writing on LittleFS");
+    return;
+  }
+
+  // Copy the certificate from SD card to LittleFS
+  while (sdCert.available()) {
+    littleFSFile.write(sdCert.read());
+  }
+
+  sdCert.close();
+  littleFSFile.close();
+  Serial.println("Certificate copied to LittleFS");
+
+  // Now load the SSL certificate from LittleFS
+  File certFile = LittleFS.open(littleFSCertFile, "r");
+  if (!certFile) {
+    Serial.println("Failed to open certificate from LittleFS");
+    return;
+  }
+
+  // Load certificate into the client
+  client.setTrustAnchors(certFile);
+
+  // Example SSL connection (replace with your server)
+  if (client.connect("example.com", 443)) {
+    Serial.println("SSL connection established");
+    // Now you can send/receive data securely
+  } else {
+    Serial.println("Connection failed");
+  }
+
+  certFile.close(); // Close the certificate file after use
+}
+
+void loop() {
+  // Your application code
+}
+```
+

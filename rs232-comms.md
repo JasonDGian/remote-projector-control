@@ -1,4 +1,4 @@
-# Communication RS232
+# 📌 Setup of the RS232 port communications.
 To send a signal from an ESP32 to an RS232 device, you need to match the communication settings (baud rate, data bits, stop bits) and ensure correct wiring. Since the ESP32 uses 3.3V logic and RS232 uses higher voltage levels (±12V), you must use a level shifter or an RS232-to-TTL converter (like a MAX232) to safely interface the two and avoid damaging the ESP32.
 
 ## 📍 0.1 - Identify the TX and RX pins on the board for UART2.
@@ -123,8 +123,8 @@ To correctly wire the connections, refer to the annotations on the module board.
 >The common color scheme is as represented in the picture.   
 >- Black for Ground.   
 >- Red for VCC or positive.   
->- Yellor or Orange for Transmission.   
->- Green for Reception.  
+>- Yellow (or Orange) for Transmission (TX).
+>- Green for Reception (RX).
 
 ## 📍 2 - Set up the variable in the programme.
 Now it's time to define the text-based substitutions for the pins and port configurations we've noted so far.

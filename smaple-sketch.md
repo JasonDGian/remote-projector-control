@@ -14,8 +14,8 @@
 #define offlinePin 4
 #define onlinePin 0
 #define functionPin 2
-#define WifiSSID "Lobos-2.4G"
-#define WifiPassword "UL6ACmnV"
+#define WifiSSID "¿?"
+#define WifiPassword "¿?"
 
 // Definitions for SR232 communication.
 #define txPinSR232 17  // TX pin for RS232
