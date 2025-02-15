@@ -311,91 +311,56 @@ This would allow me to upload the SSL certificate as a file to the flash filesys
 The SSL update mechanism i wanted to employ is the following:
 The device turns on, checks the memory for an SSL, if it exits, it compares it to the one stored in the SD card, if the one in the SD card is newer, copies and overwrites the one present in the device.
 
-```c++
-#include <WiFi.h>
-#include <WiFiClientSecure.h>
-#include <SD.h>
-#include <LittleFS.h>
+The main mechanism for LittleFS seems to be rather easy to work with.
+Some main orders are the following.
 
-// Your Wi-Fi credentials
-const char* ssid = "your-SSID";
-const char* password = "your-PASSWORD";
-
-// SSL certificate filenames
-const char* sdCertFile = "/cert.pem";  // SSL certificate stored on the SD card
-const char* littleFSCertFile = "/cert.pem";  // The same SSL certificate to be stored in LittleFS
-
-WiFiClientSecure client;
-
-void setup() {
-  Serial.begin(115200);
-  
-  // Initialize LittleFS
-  if (!LittleFS.begin()) {
-    Serial.println("Failed to mount LittleFS");
-    return;
-  }
-
-  // Initialize SD card
-  if (!SD.begin()) {
-    Serial.println("SD Card initialization failed");
-    return;
-  }
-
-  // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.println("WiFi connected");
-
-  // Read certificate from SD card
-  File sdCert = SD.open(sdCertFile, FILE_READ);
-  if (!sdCert) {
-    Serial.println("Failed to open certificate from SD card");
-    return;
-  }
-
-  // Open a file on LittleFS to store the certificate
-  File littleFSFile = LittleFS.open(littleFSCertFile, "w");
-  if (!littleFSFile) {
-    Serial.println("Failed to open file for writing on LittleFS");
-    return;
-  }
-
-  // Copy the certificate from SD card to LittleFS
-  while (sdCert.available()) {
-    littleFSFile.write(sdCert.read());
-  }
-
-  sdCert.close();
-  littleFSFile.close();
-  Serial.println("Certificate copied to LittleFS");
-
-  // Now load the SSL certificate from LittleFS
-  File certFile = LittleFS.open(littleFSCertFile, "r");
-  if (!certFile) {
-    Serial.println("Failed to open certificate from LittleFS");
-    return;
-  }
-
-  // Load certificate into the client
-  client.setTrustAnchors(certFile);
-
-  // Example SSL connection (replace with your server)
-  if (client.connect("example.com", 443)) {
-    Serial.println("SSL connection established");
-    // Now you can send/receive data securely
-  } else {
-    Serial.println("Connection failed");
-  }
-
-  certFile.close(); // Close the certificate file after use
+```cpp
+// returns true if the file exists, false otherwise.
+if (LittleFS.exists("/example.txt")) {
+  Serial.println("File exists");
+} else {
+  Serial.println("File does not exist");
 }
 
-void loop() {
-  // Your application code
+
+// Opens the file in the selected mode.
+// "r" = read.
+// "w" = write. -> Used to overwrite existing files or write to new ones.
+// "a" = append.
+File file = LittleFS.open("/example.txt", "w");
+if (file) {
+  file.println("Hello, LittleFS!");
+  file.close();
 }
+
+// Delete a file.
+if (LittleFS.remove("/example.txt")) {
+  Serial.println("File deleted successfully");
+} else {
+  Serial.println("Failed to delete file");
+}
+
+// Rename a file.
+if (LittleFS.rename("/oldfile.txt", "/newfile.txt")) {
+  Serial.println("File renamed successfully");
+} else {
+  Serial.println("Failed to rename file");
+}
+
+File file = LittleFS.open("/example.txt", "r");
+if (file) {
+  Serial.print("File size: ");
+  Serial.println(file.size());
+  file.close();
+}
+
+// Always close the file after operations
+file.close(); 
+
 ```
+
+## 📍 SD Certificate always percieved as more recent.
+Even ater copying the certificate to the device, the SD certificate, although being the very same, would always be detecetd as more recent.
+This could've happened due to several factors.
+One of them being that the LittleFS and SDfs might handle timestamps differently therefore giving back different  type of results or units. 
 

@@ -73,11 +73,24 @@
 **TIEMPO DEDICADO: 10 horas**
 
 # Dia 7 - 14/02/25
-- Inevstigar protocolo SPI para comunicacion de SD con ESP.
+- Investigar protocolo SPI para comunicacion de SD con ESP.
 - Apuntes sobre interfaz SPI y hardware modulo MicroSD.
 - Actualizacion de tareas.
 - Elaboración esquema de cableado.
 - Elaboración sketch de prueba interfaz SPI
 - Pruebas de funcionamiento con tarjeta SD mediante test-sketch arduino.
+- Apuntes varios y estudio de conceptos.
+- Pruebas de funcionamiento de almacenamiento interno.
+- Pruebas de funcionamiento de almacenamiento SD.
 
-**TIEMPO DEDICADO: 3.3 horas**
+**TIEMPO DEDICADO: 7 horas**
+
+
+# Dia 8 - 15/02/25
+- Diagrama de flujo de bloque de control de certificados en Agente remoto.
+- Redacción de la información del hardware en documento anteproyecto.
+- Pruebas para gestion de certificados SSL en dispositivo.
+- Encontrado problema con milisegundos epoch ESP32.
+- Rediseño de diagrama de flujo con ultima versión del sketch funcional.
+
+**TIEMPO DEDICADO: 8 horas**
