@@ -94,3 +94,8 @@
 - Rediseño de diagrama de flujo con ultima versión del sketch funcional.
 
 **TIEMPO DEDICADO: 8 horas**
+
+# Dia 9 - 16/02/25
+- Redacción de boceto de información acerca de las tecnolgías empleadas en el proyecto y los lenguajes de desarrollo involucrados.
+
+**TIEMPO DEDICADO: 2 horas**
