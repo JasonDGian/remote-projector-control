@@ -1,260 +1,333 @@
 ```cpp
-// Library  for Wifi connection.
+// WiFi library for connecting to wireless networks
 #include <WiFi.h>
-// Library for HTTPS secure operations.
+// Library for handling secure HTTPS connections
 #include <WiFiClientSecure.h>
-// Library for HTTP client operations (like requests).
+// HTTP client library for making HTTP requests
 #include <HTTPClient.h>
-// Library for RS232 comms.
+// Library for serial communication over RS232
 #include <HardwareSerial.h>
-// Library that provides functions to interface with SD cards
+// SD card library for file storage
 #include <SD.h>
-// Library for a lightweight file system designed to work with flash memory
+// Lightweight flash file system (for internal storage)
 #include <LittleFS.h>
-// Includes the class DIR used to iterate through directories within the internal FS.
+// File system library for handling directories
 #include <FS.h>
 
-// Definitions for WiFi connection
-#define WifiSSID "nevertell"
-#define WifiPassword "neversay"
+#include "esp_system.h"  // ESP32 system functions
 
-// Definitions for HTTP Request.
+// ---------------------------------------------
+// WiFi Configuration
+// ---------------------------------------------
+#define WifiSSID "¿?"
+#define WifiPassword "¿?"
+
+// ---------------------------------------------
+// HTTP Server Configuration
+// ---------------------------------------------
 #define serverTasksAddress "http://192.168.1.100:8085/server-events"
 
-// RS232 Port definitions.
-#define rxSR232Port 16
-#define txSR232Port 17
+// ---------------------------------------------
+// RS232 Serial Port Configuration
+// ---------------------------------------------
+#define rxSR232Port 16  // RX pin for RS232 communication
+#define txSR232Port 17  // TX pin for RS232 communication
 
-// SD Card definitions.
+// ---------------------------------------------
+// SD Card Pin Configuration
+// ---------------------------------------------
 #define sdCardMOSI 23
 #define sdCardMISO 19
 #define sdCardClock 18
 #define sdCardChipSelect 5
 
-// LED Status indicator definitions.
-#define offlinePin 4
-#define onlinePin 0
-#define functionPin 2
+// ---------------------------------------------
+// LED Status Indicators
+// ---------------------------------------------
+#define offlinePin 4     // Indicates offline status
+#define onlinePin 0      // Indicates online status
+#define littleFSLed 2    // LED for internal storage (LittleFS) status
+#define sdFSLed 15       // LED for SD card status
 
-// Debug configuration.
+// ---------------------------------------------
+// Debugging Configuration
+// ---------------------------------------------
 #define DEBUG 1
 
 #if DEBUG == 1
-#define debug(x) Serial.print(x)
-#define debugln(x) Serial.println(x)
+  #define debug(x) Serial.print(x)
+  #define debugln(x) Serial.println(x)
 #else
-#define debug(x)
-#define debugln(x)
+  #define debug(x)
+  #define debugln(x)
 #endif
 
-// Instantiate class for secure connections over SSL/TLS.
+// ---------------------------------------------
+// SSL Certificate & Device Information
+// ---------------------------------------------
+// WiFi secure client
 WiFiClientSecure client;
 
-// SSL certificate filenames
-String sdCertFilePath = "/test.txt";        // SSL certificate stored on the SD card
-String littleFSCertFilePath = "/test.txt";  // The same SSL certificate to be stored in LittleFS
+// Projector details
+String projectorModel = "Epson EB-S41";
+String projectorClassroom = "0.01";
+String projectorModelQuery = "Epson%20EB-S41";
+String projectorClassroomQuery = "0.01";
+String taskQueryAddress = "http://192.168.1.100:8085/server-events"; // Used for GET requests
 
+// File paths for SSL certificate storage
+String sdCertFilePath = "/test.txt";        // SSL certificate stored on SD card
+String littleFSCertFilePath = "/test.txt";  // Copy of SSL certificate stored in internal flash (LittleFS)
+
+// File system status flags
 bool localCertificateExists = false;
-
 bool cardIsMounted = false;
-
 bool sdCertificateExists = false;
 
+// File objects for handling certificates
 File localCertFile;
 File sdCertFile;
 
+// ---------------------------------------------
+// SD Card Initialization Function
+// ---------------------------------------------
+void sdInitializer() {
+  // PLACEHOLDER
+}
+
+void copySDCertificateToLocalFS(){
+
+  bool success = true;
+
+      // Open SD certificate file for reading.  
+    sdCertFile = SD.open(sdCertFilePath, "r");
+    if (!sdCertFile) {  
+      debugln("ERROR: Failed to open SD certificate file for copying."); 
+      return; 
+    }
+
+    // Open a new file in LittleFS for writing.  
+    localCertFile = LittleFS.open(littleFSCertFilePath, "w");
+    if (!localCertFile) {  
+      sdCertFile.close();
+      debugln("ERROR: Failed to open local certificate file for writing.");  
+      return; 
+    }
+
+      // Copy content from SD certificate to local storage (LittleFS).
+    while (sdCertFile.available()) {
+      char data = sdCertFile.read();  
+      if (localCertFile.write(data) == 0) { // Check write success
+        debugln("ERROR: Failed to write data to local certificate file.");
+        success = false;
+        break; // Exit loop on failure
+      }
+    }
+
+    // Ensure all data is written before closing
+    localCertFile.flush();
+
+    if (success){ debugln("INFO: Certificate successfully copied from SD to local storage."); }
+
+    // Close both files after copying.  
+    sdCertFile.close();
+    localCertFile.close();
+}
+
+
+// ---------------------------------------------
+// Setup Function (Runs Once at Startup)
+// ---------------------------------------------
 void setup() {
-
-  // INITIALIZE SERIAL MONITOR FOR DEBUG ----------------------------------------------------------------
-
-  // Debug output monitor.
+  // -------------------------------
+  // Initialize Serial Monitor
+  // -------------------------------
   Serial.begin(115200);
-  while (!Serial) { ; }
-  debugln("Serial monitor connected.");
+  while (!Serial) { ; } // Wait for Serial to be ready
+  debugln("INFO: Serial monitor connected.");
 
-  // CONNECT TO WIFI NETWORK ----------------------------------------------------------------------------
+  // -------------------------------
+  // Initialize LED Status Indicators
+  // -------------------------------
+  pinMode(offlinePin, OUTPUT);
+  pinMode(onlinePin, OUTPUT);
+  pinMode(littleFSLed, OUTPUT);
+  pinMode(sdFSLed, OUTPUT);
 
-  // Connect to Wi-Fi
-  debug("Connecting to WiFi.");
+  // Set default LED states
+  digitalWrite(offlinePin, LOW);
+  digitalWrite(onlinePin, LOW);
+  digitalWrite(littleFSLed, LOW);
+  digitalWrite(sdFSLed, LOW);
+
+  // -------------------------------
+  // Connect to WiFi
+  // -------------------------------
+  debug("Connecting to WiFi...");
   WiFi.begin(WifiSSID, WifiPassword);
+
+  // Blink the offline LED while connecting
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print(".");
+    digitalWrite(offlinePin, HIGH);
+    debug(".");
+    delay(250);
+    digitalWrite(offlinePin, LOW);
+    delay(250);
   }
-  // Indicate successful connection
-  debugln("\nWiFi connected");
+
+  // WiFi connected, update status LED
+  digitalWrite(offlinePin, LOW);
+  digitalWrite(onlinePin, HIGH);
+  debugln("\nINFO: WiFi connected.");
   debug("IP Address: ");
   debugln(WiFi.localIP());
 
-  // INITIALIZE INTERNAL FILE SYSTEM  --------------------------------------------------------------------
-
-  // Initialize LittleFS without formatting.
+  // -------------------------------
+  // Initialize Internal File System (LittleFS)
+  // -------------------------------
   if (!LittleFS.begin()) {
-
-    debugln("INFO: Failed to mount LittleFS. Formatting now.");
-
-    // Initialize trying to format.
+    debugln("ERROR: Failed to mount LittleFS. Attempting format...");
     if (!LittleFS.begin(true)) {
-      debugln("ERROR: Failed to mount LittleFS even after formatting.");
+      debugln("ERROR: LittleFS formatting failed.");
     } else {
-      debugln("WARNING: LittleFS mounted after forced formatting.");
+      debugln("WARNING: LittleFS formatted successfully.");
     }
   } else {
-
     debugln("INFO: LittleFS mounted successfully.");
-
-    // Check for certificate files.
-    localCertificateExists = LittleFS.exists(littleFSCertFilePath);
-
-    if (localCertificateExists) {
-      debugln("INFO: Certificate found in local file system.");
-    } else {
-      debugln("WARNING: Certificate NOT FOUND in internal file system.");
-    }
+    digitalWrite(littleFSLed, HIGH); // Turn on LittleFSLed
   }
 
-  // INITIALIZE SD CARD FILE SYSTEM  ---------------------------------------------------------------------
+  // Check if SSL certificate exists in internal storage
+  localCertificateExists = LittleFS.exists(littleFSCertFilePath);
+  debugln(localCertificateExists ? "INFO: Certificate found in LittleFS." : "WARNING: Certificate NOT FOUND in LittleFS.");
 
-  // ...initialize the SD card.
+  // -------------------------------
+  // Initialize SD Card
+  // -------------------------------
   if (!SD.begin(sdCardChipSelect)) {
-    debugln("ERROR: SD Card initialization failed.");
+    debugln("WARNING: No SD card detected.");
     sdCertificateExists = false;
-  } 
-  else {
-
-    debugln("INFO: SD Card initialized successfully.");
-
-    // Try to open the root directory to confirm the card is accessible
+  } else {
+    debugln("INFO: SD Card mounted successfully.");
+    
+    // Verify SD accessibility by opening root directory
     File testFile = SD.open("/");
     if (!testFile) {
       debugln("ERROR: SD Card not accessible.");
-    }
-    else{
+      sdCertificateExists = false;  // Mark SD as inaccessible
+    } else {
       testFile.close();
-      // If we got here, the SD card is detected and accessible
-      debugln("INFO: SD Card detected and accessible.");
-    }
+      debugln("INFO: SD Card is accessible.");
 
-    //Check for certificate in SD Card.
-    sdCertificateExists = SD.exists(sdCertFilePath);
+      // Check if SSL certificate exists on SD card
+      sdCertificateExists = SD.exists(sdCertFilePath);
+      debugln(sdCertificateExists ? "INFO: Certificate found in SD card." : "WARNING: Certificate NOT FOUND in SD card.");
 
-    if (sdCertificateExists) {
-      debugln("INFO: Certificate found in SD card.");
-    } else {
-      debugln("WARNING: Certificate NOT FOUND in SD card.");
+      // Turn on SD card LED indicator
+      digitalWrite(sdFSLed, HIGH);
     }
   }
 
-  // CERTIFICATE PRESENCE CHECK BLOCK --------------------------------------------------------------------
 
-  // Si el fichero existe...
-  if (localCertificateExists) {
+// ------------------------------------------------------
+// CERTIFICATE PRESENCE CHECK & SYNCHRONIZATION
+// ------------------------------------------------------
+// This section ensures that the SSL certificate is correctly stored in the device.  
+// - If both the local (LittleFS) and SD card certificates exist, it compares timestamps  
+//   and updates the local copy if the SD card has a newer version.  
+// - If only the SD certificate exists, it copies it to the local filesystem.  
+// - If no certificates are found, a warning is displayed.  
+// ------------------------------------------------------
 
-    // ... y existe un certificado en la SD...
-    if (sdCertificateExists) {
+if (localCertificateExists) {  
+  // CASE 1: Local certificate exists, now checking SD card.  
+  if (sdCertificateExists) {  
+    debugln("INFO: Comparing certificate timestamps...");
 
-      debugln("INFO: Reading SD Card certificate.");
+    // Open both the local and SD certificates to compare their modification timestamps.  
+    localCertFile = LittleFS.open(littleFSCertFilePath, "r");
+    sdCertFile = SD.open(sdCertFilePath, "r");
 
-      // ... comparar fechas y obtener el mas reciente.
-      localCertFile = LittleFS.open(littleFSCertFilePath, "r");
-
-      if (!localCertFile) { Serial.println("ERROR: Failed to open local certificate file."); }
-
-      sdCertFile = SD.open(sdCertFilePath, "r");
-
-      if (!sdCertFile) {
-        Serial.println("ERROR: Failed to open SD certificate file.");
-        localCertFile.close();
-      }
-
-      unsigned long localCertModStamp = localCertFile.getLastWrite();
-      debugln("Local file timestamp: " + String(localCertModStamp));
-      unsigned long sdCertModStamp = sdCertFile.getLastWrite();
-      debugln("SD file timestamp: " + String(sdCertModStamp));
-
-      localCertFile.close();
-      sdCertFile.close();
-
-      if (sdCertModStamp > localCertModStamp) {
-        Serial.println("INFO: SD Certificate is more recent. Overwriting copy in local file system.");
-        // Codigo de sobreescribir archivo.
-
-        // Abre ficheros
-
-        sdCertFile = SD.open(sdCertFilePath, "r");  // lectura
-
-        if (!sdCertFile) {
-          debugln("ERROR: Failed to open SD certificate file for copying.");
-        }
-
-        localCertFile = LittleFS.open(littleFSCertFilePath, "w");  // escritura
-
-        if (!localCertFile) {
-          debugln("ERROR: Failed to open local certificate file for writing.");
-          sdCertFile.close();
-        }
-
-        // Read from the SD file and write to LittleFS file
-        // practicamente siempre que haya una linea disponible en el certificado del SD
-        while (sdCertFile.available()) {
-          // la copiará en el certificado local.
-          localCertFile.write(sdCertFile.read());
-        }
-
-        debugln("INFO: Certificate copied to local file system.");
-
-        sdCertFile.close();
-        localCertFile.close();
-
-      } else if (sdCertModStamp < localCertModStamp) {
-        debugln("INFO: Local file system certificate is more recent. No changes applied.");
-        // ignorar certificado SD
-      } else {
-        debugln("INFO: Local certificate is up to date. No changes applied.");
-        // ifnorar certificado SD
-      }
+    if (!localCertFile) {  
+      debugln("ERROR: Failed to open local certificate file.");  
     }
-  }
-  // Si el fichero no existe...
-  else {
-    // ... y la SD está montada. -> Copiar desde SD.
-    if (sdCertificateExists) {
-      debugln("INFO: No certificate found in local file system. Copying from SD Card the available copy.");
 
-      sdCertFile = SD.open(sdCertFilePath, "r");  // lectura
+    if (!sdCertFile) {  
+      debugln("ERROR: Failed to open SD certificate file.");  
+      localCertFile.close();  // Close the local file if SD file failed to open.
+    }
 
-      if (!sdCertFile) { debugln("ERROR: Failed to open SD certificate file for copying."); }
+    // Get modification timestamps for both files.  
+    unsigned long localCertModStamp = localCertFile.getLastWrite();
+    debugln("Local certificate timestamp: " + String(localCertModStamp));
 
-      localCertFile = LittleFS.open(littleFSCertFilePath, "w");  // escritura
+    unsigned long sdCertModStamp = sdCertFile.getLastWrite();
+    debugln("SD certificate timestamp: " + String(sdCertModStamp));
 
-      if (!localCertFile) {
-        debugln("ERROR: Failed to open local certificate file for writing.");
-        ;
-      }
+    // Close files after reading timestamps.  
+    localCertFile.close();
+    sdCertFile.close();
 
-      // Read from the SD file and write to LittleFS file
-      // practicamente siempre que haya una linea disponible en el certificado del SD
-      while (sdCertFile.available()) {
-        // la copiará en el certificado local.
-        localCertFile.write(sdCertFile.read());
-      }
+    // CASE 1A: SD certificate is newer -> Overwrite local copy  
+    if (sdCertModStamp > localCertModStamp) {  
+      debugln("INFO: SD Certificate is more recent. Overwriting local certificate.");
 
-      debugln("INFO: Certificate copied to local file system.");
+      copySDCertificateToLocalFS();
 
+      // Close both files after copying.  
       sdCertFile.close();
       localCertFile.close();
 
-    } else {
-      // ... y no está la SD montada -> ERROR.
-      debugln("WARNING: NO CERTIFICATE IN LOCAL FILE SYSTEM AND NO FILE AVAILABLE FOR COPY.");
+    }  
+    // CASE 1B: Local certificate is already the latest -> No update needed  
+    else if (sdCertModStamp < localCertModStamp) {  
+      debugln("INFO: Local certificate is more recent. No changes applied.");
+    }  
+    // CASE 1C: Both certificates have the same timestamp -> No action needed  
+    else {  
+      debugln("INFO: Local certificate is up to date. No changes applied.");
     }
+
+    // Unmount the SD card and turn off its indicator LED after processing.  
+    SD.end();
+    digitalWrite(sdFSLed, LOW);
   }
-  // -----------------------
+}  
+// CASE 2: Local certificate does not exist -> Copy from SD if available  
+else {  
+  if (sdCertificateExists) {  
+    debugln("INFO: No local certificate found. Copying from SD...");
+
+    copySDCertificateToLocalFS();
+
+    // Unmount the SD card and turn off its indicator LED after processing.  
+    SD.end();
+    digitalWrite(sdFSLed, LOW);
+  }  
+  // CASE 3: No certificates available in either location -> Warning  
+  else {  
+    debugln("WARNING: No certificate found in local storage or SD card.");
+  }  
 }
 
 
+  // -------------------------------
+  // End of Setup
+  // -------------------------------
+}
 
+// ---------------------------------------------
+// Loop Function (Runs Continuously)
+// ---------------------------------------------
 void loop() {
-  // put your main code here, to run repeatedly:
+  // Listen for serial input to trigger a reboot
+  if (Serial.available()) {
+    char received = Serial.read();
+    if (received == 'r') {
+      Serial.println("Rebooting now...");
+      esp_restart();
+    }
+  }
 }
+
 ```
