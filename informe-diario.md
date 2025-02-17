@@ -99,3 +99,10 @@
 - Redacción de boceto de información acerca de las tecnolgías empleadas en el proyecto y los lenguajes de desarrollo involucrados.
 
 **TIEMPO DEDICADO: 2 horas**
+
+# Dia 10 - 76/02/25
+- Comienzo del desarrollo del frente web para el proyecto.
+- Pruebas de comunicacion entre front y back.
+- Creación de endpoints de prueba y metodos de recuperación de datos de BBDD.
+
+**TIEMPO DEDICADO: 8 horas**
