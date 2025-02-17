@@ -2,6 +2,7 @@ package es.iesjandula.reaktor_projector_server.rest;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -10,14 +11,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import es.iesjandula.reaktor_projector_server.dtos.CommandDto;
+import es.iesjandula.reaktor_projector_server.dtos.ProjectorDto;
 import es.iesjandula.reaktor_projector_server.dtos.ServerEventDto;
 import es.iesjandula.reaktor_projector_server.dtos.SimplifiedServerEventDto;
 import es.iesjandula.reaktor_projector_server.entities.Action;
@@ -41,6 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ProjectorController
 {
 
@@ -404,6 +409,69 @@ public class ProjectorController
 		
 		return ResponseEntity.ok().body("turn-on");
 	}
+	
+	
+	// testing stuff
+	@GetMapping( value = "/floors")
+	public ResponseEntity<?> getFloorList(){
+		
+		String [] floors = {"Planta 0", "Planta 1", "Planta 2", "Planta 3"};
+
+		return ResponseEntity.ok().body(floors);
+	}
+	
+	@GetMapping( value = "/classrooms")
+	public ResponseEntity<?> getClassroomList( @RequestParam(required = true) String floor   ){
+	
+		List<String> classroom = new ArrayList();
+		
+		if ( "Planta 0".equals(floor)) {
+			classroom.add("0.01");
+			classroom.add("0.02");
+			classroom.add("0.03");
+			 
+		}
+		
+		if ( "Planta 1".equals(floor)) {
+			classroom.add("1.01");
+			classroom.add("1.02");
+			classroom.add("1.03");
+			 
+		}
+		if ( "Planta 2".equals(floor)) {
+			classroom.add("2.01");
+			classroom.add("2.02");
+			classroom.add("2.03");
+			
+		}
+		if ( "Planta 3".equals(floor)) {
+			classroom.add("3.01");
+			classroom.add("3.02");
+			classroom.add("3.03");
+			
+		}
+		
+		return ResponseEntity.ok().body(classroom);
+	}
+	
+	@GetMapping( value = "/classroom-projectors")
+	public ResponseEntity<?> getClassroomProjectors ( @RequestParam(required = true) String classroom ){
+		
+		List<ProjectorDto> projectors = this.projectorRepository.getProjectorByClassroom(classroom);
+		
+		return ResponseEntity.ok().body(projectors);
+		
+	}
+	
+	@GetMapping( value = "/commands")
+	public ResponseEntity<?> getProjectorModelCommands ( @RequestParam(required = true) String modelname ){
+		
+		List<CommandDto> commands = this.commandRepository.findCommandsByModel(modelname);
+		
+		return ResponseEntity.ok().body(commands);
+		
+	}
+	
 
 
 }
