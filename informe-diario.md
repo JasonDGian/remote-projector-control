@@ -100,9 +100,15 @@
 
 **TIEMPO DEDICADO: 2 horas**
 
-# Dia 10 - 76/02/25
+# Dia 10 - 17/02/25
 - Comienzo del desarrollo del frente web para el proyecto.
 - Pruebas de comunicacion entre front y back.
 - Creación de endpoints de prueba y metodos de recuperación de datos de BBDD.
 
 **TIEMPO DEDICADO: 8 horas**
+
+# Dia 11 - 19/02/25
+- Implementado el sistema de navegación en front end vue.
+- Mejoras esteticas en front end vue.
+- Comienzo proceso modularización del front en componentes.
+**TIEMPO DEDICADO: 4 horas**
