@@ -112,3 +112,16 @@
 - Mejoras esteticas en front end vue.
 - Comienzo proceso modularización del front en componentes.
 **TIEMPO DEDICADO: 4 horas**
+
+# Dia 12 - 20/02/25
+- Trabajo en front end.
+  - Modulariza tabla proyectores.
+  - Modulariza tabla acciones.
+  - Crea nuevo componente tabla eventos servidor
+  - Mejoras esteticas en front end vue.
+- Trabajo en back.
+  - Crea endpoints que alimentan nuevas tablas en front.
+  - Introduce nuevo DTO para Tabla Eventos servidor.
+  - Crea metodo en repositorio para el DTO mencionado anteriormente.   
+
+**TIEMPO DEDICADO: 5 horas**
