@@ -1,7 +1,7 @@
 package es.iesjandula.reaktor_projector_server.entities;
 
-import java.math.BigInteger;
 import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;

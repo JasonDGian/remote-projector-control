@@ -24,6 +24,7 @@ import es.iesjandula.reaktor_projector_server.dtos.CommandDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorDto;
 import es.iesjandula.reaktor_projector_server.dtos.ServerEventDto;
 import es.iesjandula.reaktor_projector_server.dtos.SimplifiedServerEventDto;
+import es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto;
 import es.iesjandula.reaktor_projector_server.entities.Action;
 import es.iesjandula.reaktor_projector_server.entities.Command;
 import es.iesjandula.reaktor_projector_server.entities.Projector;
@@ -390,6 +391,14 @@ public class ProjectorController
 		}
 		
 		return null;
+	}
+	
+	@GetMapping( value = "/server-events-table")
+	public ResponseEntity<?> serveCommandsTable(){
+		
+		List<TableServerEventDto> commandsList = this.serverEventRepository.getTableServerEventDtoList();
+		
+		return ResponseEntity.ok().body(commandsList);
 	}
 	
 	/**
