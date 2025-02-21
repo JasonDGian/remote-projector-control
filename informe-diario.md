@@ -110,7 +110,8 @@
 # Dia 11 - 19/02/25
 - Implementado el sistema de navegación en front end vue.
 - Mejoras esteticas en front end vue.
-- Comienzo proceso modularización del front en componentes.
+- Comienzo proceso modularización del front en componentes.   
+    
 **TIEMPO DEDICADO: 4 horas**
 
 # Dia 12 - 20/02/25
@@ -122,6 +123,31 @@
 - Trabajo en back.
   - Crea endpoints que alimentan nuevas tablas en front.
   - Introduce nuevo DTO para Tabla Eventos servidor.
-  - Crea metodo en repositorio para el DTO mencionado anteriormente.   
-
+  - Crea metodo en repositorio para el DTO mencionado anteriormente.      
+    
 **TIEMPO DEDICADO: 5 horas**
+
+# Dia 13 - 20/02/25
+- Trabajo en front end
+  - Agrega pagina formularios csv y otros.
+  - Agrega formulario carga ficheros csv.
+  - Agrega formulario borrado modelo.
+  - Agrega formulario carga modelo.
+  - Agregar componente del modal.
+  - Agregar componente de modelo tabla.
+  - Agregar formulario asignación proyector a clase.
+  - Configuración de aviso info/error formulario registro modelo.
+
+- Trabajo en back end
+  - Agrga nuevo DTO para peticiones de modelo proyector.
+  - Agrega nuevo DTO para respuestas peticion.
+  - Agrege nuevo endpoint para peticion de alta de modelo proyector.
+  - Agrega nuevo endpoint para peticion ded baja modelo proyector.
+  - Agrega endpoint para recuperar listado modelos en servidor.
+  - Revision de endpoints.
+  - Comentados endpoints nuevos.
+  - Cambiadas respuestas por dto respuesta.
+  - Boceto de funcionamiento endpoint de asignación de proyectores a clases.
+
+**TIEMPO DEDICADO: 8 horas**
+
