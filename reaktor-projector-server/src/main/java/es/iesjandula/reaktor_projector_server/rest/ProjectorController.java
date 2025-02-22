@@ -501,6 +501,22 @@ public class ProjectorController
 	}
 
 	
+	public ResponseEntity<?> asignProjectoToClassroom( @RequestBody ProjectorDto projectorDto){
+		
+		// Controlar que la clase exista.
+		
+		// controlar que el modelo exista.
+		
+		
+		/**
+		 * Este endpoint debe de recibir un modelo, una clase y asignar un proyector de ese modelo a esa clase.
+		 * Debe de comprobar que el modelo exista antes de asignar nada.
+		 */
+
+		return null;
+
+	}
+	
 	// -------------  !!!!!   TO BE REVISED FROM HERE ON  !!!!!   -------------
 	// From this line forwards endpoints are basically bare bones and if they work
 	// it is just a temporary fix. Must be revised to consolidate and secure.

@@ -151,3 +151,10 @@
 
 **TIEMPO DEDICADO: 8 horas**
 
+# Dia 13 - 20/02/25    
+- Arreglado el layout para los formularios utilizando grid.
+- Simplificado documento html de la plantilla de los formularios.
+- Eliminando redundancias en codigo html bootstrap
+- Mejoras esteticas aplicadas a pagina Formularios.
+    
+**TIEMPO DEDICADO: 3 horas**
