@@ -53,13 +53,15 @@ public class Projector
      * </p>
      */
 	@Id
-	private String classroom;
+	@ManyToOne
+	@JoinColumn( name = "classroom")
+	private Classroom classroom;
 	
 	@Override
 	public String toString() {
 	    return new StringBuilder()
 	        .append("Projector - model: ").append(this.model == null ? "N/A" : this.model.getModelName())
-	        .append(" | classroom: ").append(this.classroom == null ? "N/A" : this.classroom)
+	        .append(" | classroom: ").append(this.classroom.getClassroomName() == null ? "N/A" : this.classroom.getClassroomName())
 	        .toString();
 	}
 

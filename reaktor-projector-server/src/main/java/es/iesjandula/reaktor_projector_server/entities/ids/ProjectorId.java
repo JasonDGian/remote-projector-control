@@ -1,5 +1,6 @@
 package es.iesjandula.reaktor_projector_server.entities.ids;
 
+import es.iesjandula.reaktor_projector_server.entities.Classroom;
 import es.iesjandula.reaktor_projector_server.entities.ProjectorModel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -49,13 +50,13 @@ public class ProjectorId
 	/** 
 	 * The classroom where the projector is located. 
 	 */
-	private String classroom;
+	private Classroom classroom;
 	
 	@Override
 	public String toString() {
 	    return new StringBuilder()
 	        .append("ProjectorId - model: ").append(this.model == null ? "N/A" : this.model.getModelName())
-	        .append(" | classroom: ").append(this.classroom == null  ? "N/A" : this.classroom)
+	        .append(" | classroom: ").append(this.classroom.getClassroomName() == null  ? "N/A" : this.classroom.getClassroomName())
 	        .toString();
 	}
 }

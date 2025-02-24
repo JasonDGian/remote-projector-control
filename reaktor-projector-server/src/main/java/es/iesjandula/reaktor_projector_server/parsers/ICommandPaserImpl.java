@@ -11,7 +11,7 @@ import es.iesjandula.reaktor_projector_server.entities.Command;
 import es.iesjandula.reaktor_projector_server.entities.ProjectorModel;
 import es.iesjandula.reaktor_projector_server.entities.ids.CommandId;
 import es.iesjandula.reaktor_projector_server.parsers.interfaces.ICommandParser;
-import es.iesjandula.reaktor_projector_server.repositories.IActionRepositories;
+import es.iesjandula.reaktor_projector_server.repositories.IActionRepository;
 import es.iesjandula.reaktor_projector_server.repositories.ICommandRepository;
 import es.iesjandula.reaktor_projector_server.repositories.IProjectorModelRepository;
 import es.iesjandula.reaktor_projector_server.utils.Constants;
@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * <p>It interacts with the database via:
  * <ul>
- *     <li>{@link IActionRepositories} - to manage action records.</li>
+ *     <li>{@link IActionRepository} - to manage action records.</li>
  *     <li>{@link ICommandRepository} - to store and retrieve commands.</li>
  *     <li>{@link IProjectorModelRepository} - to manage projector models.</li>
  * </ul>
@@ -47,7 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ICommandPaserImpl implements ICommandParser
 {
     @Autowired
-    private IActionRepositories actionRepo;
+    private IActionRepository actionRepo;
     
     @Autowired
     private ICommandRepository commandRepo;

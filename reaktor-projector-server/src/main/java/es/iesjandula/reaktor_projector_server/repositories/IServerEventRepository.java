@@ -25,7 +25,7 @@ public interface IServerEventRepository extends JpaRepository<ServerEvent, Long>
 	            se.eventId, 
 	            c.action.actionName, 
 	            p.model.modelName, 
-	            p.classroom, 
+	            p.classroom.classroomName, 
 	            se.user, 
 	            se.dateTime, 
 	            se.actionStatus

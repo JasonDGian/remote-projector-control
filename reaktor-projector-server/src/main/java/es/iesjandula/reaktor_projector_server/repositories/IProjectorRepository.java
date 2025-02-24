@@ -12,8 +12,8 @@ import es.iesjandula.reaktor_projector_server.entities.ids.ProjectorId;
 
 public interface IProjectorRepository extends JpaRepository<Projector, ProjectorId>
 {
-	@Query("SELECT new es.iesjandula.reaktor_projector_server.dtos.ProjectorDto( pro.model.modelName, pro.classroom) "
+	@Query("SELECT new es.iesjandula.reaktor_projector_server.dtos.ProjectorDto( pro.model.modelName, pro.classroom.classroomName) "
 			+ "FROM Projector pro "
-			+ "WHERE pro.classroom LIKE :classroom")
+			+ "WHERE LOWER(pro.classroom) = LOWER(:classroom)")
 	public List<ProjectorDto> getProjectorByClassroom( @Param("classroom") String classroom ); 
 }

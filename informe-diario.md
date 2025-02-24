@@ -159,3 +159,27 @@
 - Arregla mensajes commit repositorio para seguir convenio kraken.
     
 **TIEMPO DEDICADO: 5 horas**
+
+
+# Dia 15 - 21/02/25    
+- Rediseño de la logica del endpoint de parseo de ficheros multiples.
+- Creado nuevo DTO para respuesta multiple mensajes.
+- Implementada funcionalidad de parseo en front-end
+- Arregla nombre repositorio acciones.
+- Agrega entidad Floor (planta) con su respectivo repositorio.
+- Agrega entidad Classroom (aula) con su respectivo repositorio.
+- Agrega cambios al parseador de proyectores para que tengan en cuenta las nuevas entidades.
+- Actualiza Endpoint de recuperacion de plantas para que use el repositorio de Floors.
+- Actualiza Endpoint de recuperacion de aulas para que use el repositorio de Classrooms.
+- Actualiza el endpoint de parseo de proyectores para incluir el manejo de las nuevas entidades.
+- Actualiza todas las clases acopladas a la clase Proyector debido a los cambios relacionados al as entidades introducidas.
+- Actualiza la logica del front end haciendo uso de los nuevos endpoints modificados, teniendo en cuenta la estructura de las nuevas respuestas recibidas.
+- Crea nuevos componentes para combobox de planta y aula.
+    
+TODO: 
+- Revisar to-string de las entidades.
+- 
+
+
+
+**TIEMPO DEDICADO: 5 horas**
