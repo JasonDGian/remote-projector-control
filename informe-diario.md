@@ -162,6 +162,16 @@
 
 
 # Dia 15 - 21/02/25    
+
+- Introducidos cambios en el esquema del proyecto para incluir dos nuevas entidades.
+    - Aula
+    - Planta
+    
+![imagen](https://github.com/user-attachments/assets/911dcf85-026e-47cd-a45d-014ecd2cce7f)
+
+     
+
+
 - Rediseño de la logica del endpoint de parseo de ficheros multiples.
 - Creado nuevo DTO para respuesta multiple mensajes.
 - Implementada funcionalidad de parseo en front-end
@@ -175,11 +185,14 @@
 - Actualiza todas las clases acopladas a la clase Proyector debido a los cambios relacionados al as entidades introducidas.
 - Actualiza la logica del front end haciendo uso de los nuevos endpoints modificados, teniendo en cuenta la estructura de las nuevas respuestas recibidas.
 - Crea nuevos componentes para combobox de planta y aula.
+
+IMPORTANTE:
+- Investigado funcionamiento de modelos reactivos de VUE. -> Es necesario refactorizar pagina de carga de datos para optimizar codigo (actualmente 710 lineas, implementación incompleta.)
     
 TODO: 
 - Revisar to-string de las entidades.
-- 
 
 
 
-**TIEMPO DEDICADO: 5 horas**
+
+**TIEMPO DEDICADO: 7 horas**

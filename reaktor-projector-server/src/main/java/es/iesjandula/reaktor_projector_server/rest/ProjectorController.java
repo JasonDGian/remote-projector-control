@@ -617,21 +617,52 @@ public class ProjectorController
 		}
 	}
 
+	@Transactional
+	@PostMapping("/assign-projector")
 	public ResponseEntity<?> asignProjectoToClassroom(@RequestBody ProjectorDto projectorDto)
 	{
+		try
+		{
 
-		// Controlar que la clase exista.
+			log.info("Call to /assign-projector received.");
 
-		// controlar que el modelo exista.
+			ResponseDto responseDto = new ResponseDto();
 
-		/**
-		 * Este endpoint debe de recibir un modelo, una clase y asignar un proyector de
-		 * ese modelo a esa clase. Debe de comprobar que el modelo exista antes de
-		 * asignar nada.
-		 */
+			String modelName = projectorDto.getModel();
+			String classroomName = projectorDto.getClassroom();
 
-		return null;
+			// Check if the classroom exists.
+			Optional<Classroom> classroomOpt = this.classroomRepository.findById(classroomName);
 
+			Classroom classroomEntity = classroomOpt
+					.orElseThrow(() -> new ProjectorServerException(499, "Classroom does not exist."));
+
+			// Check if the projector model exists.
+			Optional<ProjectorModel> projectorModelOpt = this.projectorModelRepository.findById(modelName);
+
+			ProjectorModel projectorModelEntity = projectorModelOpt
+					.orElseThrow(() -> new ProjectorServerException(499, "Projector Model does not exist."));
+
+			// Si la ejecución alcanza este punto es que ambas entidades existen.
+
+			// Bloque de asignación.
+			Projector projectorEntity = new Projector();
+
+			projectorEntity.setClassroom(classroomEntity);
+			projectorEntity.setModel(projectorModelEntity);
+
+			this.projectorRepository.save(projectorEntity);
+
+			responseDto.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
+			responseDto.setMessage("Asignation sucessful.");
+
+			return ResponseEntity.status(HttpStatus.OK).body(responseDto);
+
+		} catch (ProjectorServerException e)
+		{
+			log.error(e.getMessage());
+			return ResponseEntity.internalServerError().body(e.getMapError());
+		}
 	}
 
 	// ------------- !!!!! TO BE REVISED FROM HERE ON !!!!! -------------
@@ -890,6 +921,41 @@ public class ProjectorController
 		}
 
 		return ResponseEntity.ok().body(commands);
+	}
+
+	@GetMapping(value = "/ayuda")
+	public ResponseEntity<?> getHelpText(@RequestParam(required = true) String element)
+	{
+
+		ResponseDto responseDto = new ResponseDto();
+		String message = "";
+
+		switch (element)
+		{
+		case "carga-datos":
+			message = """
+					Este formulario permite cargar datos al servidor mediante archivos CSV estructurados. La estructura de los archivos es la siguiente:
+
+					 - Comandos: Campo1, Campo2, Campo3.
+					 - Proyectores: Modelo, Aula, Planta.
+
+					Seleccione los archivos desde su equipo y haga clic en el botón 'Enviar archivo(s)' para confirmar la operación. Después de unos momentos, recibirá una respuesta con el resultado de la operación.
+					""";
+
+			break;
+		case "registra-modelo":
+			message = """
+					Este formulario permite registrar un nuevo modelo en la base de datos del servidor.
+					Ingrese el nombre del modelo que desea registrar y luego haga clic en 'Registrar modelo' para confirmar la acción.
+					Después de unos momentos, recibirá una respuesta con el resultado de la operación.
+					""";
+			break;
+		}
+
+		responseDto.setMessage(message);
+
+		return ResponseEntity.ok().body(responseDto);
+
 	}
 
 }
