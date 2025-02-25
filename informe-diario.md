@@ -127,7 +127,7 @@
     
 **TIEMPO DEDICADO: 5 horas**
 
-# Dia 13 - 20/02/25
+# Dia 13 - 21/02/25
 - Trabajo en front end
   - Agrega pagina formularios csv y otros.
   - Agrega formulario carga ficheros csv.
@@ -151,7 +151,7 @@
 
 **TIEMPO DEDICADO: 8 horas**
 
-# Dia 14 - 20/02/25    
+# Dia 14 - 22/02/25    
 - Arreglado el layout para los formularios utilizando grid.
 - Simplificado documento html de la plantilla de los formularios.
 - Eliminando redundancias en codigo html bootstrap
@@ -161,7 +161,7 @@
 **TIEMPO DEDICADO: 5 horas**
 
 
-# Dia 15 - 21/02/25    
+# Dia 15 - 24/02/25    
 
 - Introducidos cambios en el esquema del proyecto para incluir dos nuevas entidades.
     - Aula
@@ -169,9 +169,7 @@
     
 ![imagen](https://github.com/user-attachments/assets/911dcf85-026e-47cd-a45d-014ecd2cce7f)
 
-     
-
-
+    
 - Rediseño de la logica del endpoint de parseo de ficheros multiples.
 - Creado nuevo DTO para respuesta multiple mensajes.
 - Implementada funcionalidad de parseo en front-end
@@ -192,7 +190,15 @@ IMPORTANTE:
 TODO: 
 - Revisar to-string de las entidades.
 
-
-
-
 **TIEMPO DEDICADO: 7 horas**
+
+
+# Dia 16 - 25/02/25    
+- Arreglados mensajes que devuelve el servidor eliminando errores tipográficos.
+- Comienzo modularización de front-end. Extrae 'cajas formularios' de la pagina de carga optimizando asi codigo y funciones.
+- Atrapado un error en el lanzamiento de excepciones para nombres vacios para modelos de proyector.
+- Modularizado formulario CSV
+- Modularizado formulario registro modelos.
+- Comienzo modularizacion formulario registro proyectores.
+    
+**TIEMPO DEDICADO: 6 horas**
