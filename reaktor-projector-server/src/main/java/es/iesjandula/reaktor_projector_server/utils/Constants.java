@@ -13,6 +13,7 @@ public final class Constants
 	
 	public static final String RESPONSE_STATUS_SUCCESS = "SUCCESS";
 	public static final String RESPONSE_STATUS_ERROR = "ERROR";
+	public static final String RESPONSE_STATUS_INFO = "INFO";
 	
 	
 	public static final String EVENT_STATUS_PENDING = "PENDING";

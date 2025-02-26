@@ -10,4 +10,4 @@ ERROR 498 - Thrown when parsing endpoints receive an unsupported format or null 
 ERROR 499 - Thrown when a problem occurrs during projector asignation process.
 
 
-ERROR 591 -  
+ERROR 591 - "Cannot delete model: There are projectors associated with this model."

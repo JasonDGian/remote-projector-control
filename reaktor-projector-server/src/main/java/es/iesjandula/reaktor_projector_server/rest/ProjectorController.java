@@ -2,11 +2,15 @@ package es.iesjandula.reaktor_projector_server.rest;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +27,7 @@ import es.iesjandula.reaktor_projector_server.dtos.ClassroomDto;
 import es.iesjandula.reaktor_projector_server.dtos.CommandDto;
 import es.iesjandula.reaktor_projector_server.dtos.FloorDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorDto;
+import es.iesjandula.reaktor_projector_server.dtos.ProjectorInfoDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorModelDto;
 import es.iesjandula.reaktor_projector_server.dtos.ResponseDto;
 import es.iesjandula.reaktor_projector_server.dtos.RichResponseDto;
@@ -392,6 +397,40 @@ public class ProjectorController
 
 	// -------------------- UPLOAD AND DELETE RECORDS ENDPOINTS --------------------
 
+	@GetMapping("/projectors")
+	public ResponseEntity<?> getProjectorList(
+			@RequestParam(value = "criteria", required = false) String criteria,
+			@PageableDefault(page = 0, size = 10) Pageable pageable
+			)
+	{
+
+		log.info("Call to /getProjectorList received with criteria: " + criteria);
+
+		Page<ProjectorInfoDto> projectors;
+		
+		String message;
+
+		String modelNameCriteria = "modelname";
+
+		// If the criteria parameter is not null nor blank, then compare with criteria expected for modelname.
+		if (criteria != null && !criteria.isBlank() && modelNameCriteria.equals(criteria.toLowerCase().trim()))
+		{
+			projectors = this.projectorRepository.getProjectorOrderByModelName(pageable);
+			message = "Projectors list ordered by model name.";
+		}
+		// If no criteria specified, return list ordered by floor and classroom.
+		else
+		{
+			projectors = this.projectorRepository.getProjectorsOrderByFloorAndClassroom(pageable);
+			message = "Projectors list ordered by floor and classroom.";
+		}
+		
+		log.info(message);
+
+		// Return a success response with the result
+		return ResponseEntity.status(HttpStatus.OK).body(projectors);
+	}
+
 	/**
 	 * Creates a new projector model in the system.
 	 * <p>
@@ -423,21 +462,19 @@ public class ProjectorController
 
 			String message; // Store the message returned in responses and logged.
 
-			if (projectorDto.getModelname().isBlank())
+			// Name of the projector to be stored.
+			String modelName = projectorDto.getModelname();
+
+			log.info("Projector model name: '" + modelName + "'.");
+
+			if (modelName == null || modelName.isBlank() || modelName.isEmpty())
 			{
 				// .. if the dto has no string for the model name.
 				message = "No projector model name given. Projector model needs a name.";
 				log.error(message);
-				// ERROR 496 - Thrown when a user tries to upload a projector that is already
-				// stored in the data base.
-				new ProjectorServerException(496, message);
-
-				// return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new
-				// ResponseDto(Constants.RESPONSE_STATUS_ERROR, message));
+				// ERROR 496 - "No projector model name given.
+				throw new ProjectorServerException(496, message);
 			}
-
-			// Name of the projector to be stored.
-			String modelName = projectorDto.getModelname();
 
 			// Recover optinal projector object from DB.
 			Optional<ProjectorModel> existingModel = projectorModelRepository.findById(modelName);
@@ -459,7 +496,7 @@ public class ProjectorController
 
 			this.projectorModelRepository.saveAndFlush(projectorModel);
 
-			message = "Projector with modelname " + modelName + " sucesffully stored in database.";
+			message = "Projector with model name " + modelName + " succesffully stored in database.";
 
 			log.debug(message);
 
@@ -477,85 +514,102 @@ public class ProjectorController
 			log.error(message + " {}", e.getLocalizedMessage());
 			return ResponseEntity.internalServerError().body(message + e.getMessage());
 		}
+
 	}
 
 	/**
 	 * Deletes a projector model from the database.
 	 * <p>
-	 * This method handles the deletion of a projector model. It first checks if the
-	 * model name is provided, then verifies whether the model exists in the
-	 * database. If the model exists, it is deleted from the database. If the model
-	 * name is blank or the model does not exist, appropriate exceptions are thrown.
+	 * This method handles the deletion of a projector model by performing the
+	 * following checks: 1. Verifies that the model name is provided and is valid.
+	 * 2. Checks if there are any projectors associated with the given model. 3. If
+	 * no projectors are associated, attempts to delete the model from the database.
+	 * 4. If any error occurs during the process (e.g., model not found, or
+	 * projectors are still associated with the model), appropriate exceptions are
+	 * thrown.
 	 * </p>
 	 *
 	 * @param projectorDto The Data Transfer Object (DTO) containing the projector
-	 *                     model name to be deleted.
+	 *                     model name to be deleted. The model name must be valid
+	 *                     and non-blank.
+	 * 
 	 * @return ResponseEntity A response entity containing the status of the
-	 *         operation. If the projector model is successfully deleted, a
-	 *         confirmation message is returned with HTTP status 204 (No Content).
-	 *         In case of errors, a custom error message is returned with the
-	 *         corresponding error code and HTTP status.
-	 * @throws ProjectorServerException if the projector model does not exist in the
-	 *                                  database or if the model name is blank.
+	 *         operation: - If the model is successfully deleted, returns HTTP
+	 *         status 200 (OK) with a success message. - If any errors are
+	 *         encountered, returns an HTTP status 500 (Internal Server Error) with
+	 *         an error message.
+	 * 
+	 * @throws ProjectorServerException if: - The projector model name is blank or
+	 *                                  null. - The model does not exist in the
+	 *                                  database. - There are projectors still
+	 *                                  associated with the model.
 	 */
 	@DeleteMapping("/projector-models")
-	public ResponseEntity<?> deleteModel(@RequestBody() ProjectorModelDto projectorDto)
+	public ResponseEntity<?> deleteModel(@RequestBody ProjectorModelDto projectorDto)
 	{
 		try
 		{
+			// Log the incoming request for model deletion
+			log.info("Received DELETE request for '/projector-models'.");
 
-			// Log the incoming request for processing models
-			log.info("DELETE call to '/projector-models' received.");
-
-			if (projectorDto.getModelname() == null || projectorDto.getModelname().isBlank())
+			// Validate the input
+			if (projectorDto == null || projectorDto.getModelname() == null || projectorDto.getModelname().isBlank())
 			{
-				// .. if the dto has no string for the model name.
-				String message = "No projector model name given. Projector model needs a name.";
-				log.error(message);
-				// ERROR 496 - Thrown when a user tries to upload a projector that is already
-				// stored in the data base.
+				String message = "Projector model name is required for deletion.";
+				log.warn(message); // Log as warning, as the request cannot proceed without a model name
+				// Custom error code for missing model name
 				throw new ProjectorServerException(497, message);
 			}
 
-			// Name of the projector to be stored.
+			// Extract the model name to delete
 			String modelName = projectorDto.getModelname();
+			log.debug("Attempting to delete projector model: {}", modelName); // Log the specific model name
 
-			// Recover optinal projector object from DB.
+			// Check if there are any projectors associated with the given model
+			Integer associatedProjectorCount = projectorRepository.countProjectorAssociatedModel(modelName);
+			if (associatedProjectorCount > 0)
+			{
+
+				String sChar = associatedProjectorCount > 1 ? "s are" : " is";
+
+				String message = "Deletion failed: " + associatedProjectorCount + " projector" + sChar
+						+ " still associated with model " + modelName + ".";
+
+				log.warn(message);
+
+				// Custom error code for associated projectors
+				throw new ProjectorServerException(591, message);
+			}
+
+			// Attempt to find the projector model in the database
 			Optional<ProjectorModel> existingModel = projectorModelRepository.findById(modelName);
-
-			// Check if the projector exists ..
 			if (existingModel.isEmpty())
 			{
-				// .. if the projector exists throw exception.
-				String message = "No projector model found with name " + modelName + " for deletion.";
-				log.error(message);
-				// ERROR 496 - Thrown when a user tries to upload a projector that is already
-				// stored in the data base.
-				throw new ProjectorServerException(497, message);
+				// Log error if the model is not found and throw an exception
+				String message = "Projector model " + modelName + " not found in the database for deletion.";
+				log.error(message); // Log as error since it's an unexpected condition (model not found)
+				throw new ProjectorServerException(497, message); // Custom error code for model not found
 			}
 
-			// If the projector does exist, delete it.
-			this.projectorModelRepository.deleteById(modelName);
+			// Proceed to delete the projector model
+			projectorModelRepository.deleteById(modelName);
+			String successMessage = "Projector model " + modelName + " successfully deleted from the database.";
+			log.info(successMessage); // Log successful deletion at info level
 
-			String message = "Projector with modelname " + modelName + " sucesffully deleted from database.";
-
-			log.info(message);
-
-			ResponseDto response = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, message);
-
-			// Returns 204 code to indicate sucessfull deletion.
-			return ResponseEntity.status(HttpStatus.OK).body(response);
+			// Response for client side.
+			ResponseDto response = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, successMessage);
+			return ResponseEntity.status(HttpStatus.OK).body(response); // Return success response
 
 		} catch (ProjectorServerException e)
 		{
-			log.error(e.getMessage());
+			// Custom exceptions.
+			log.error("Projector deletion failed: {}", e.getMessage());
 			return ResponseEntity.internalServerError().body(e.getMapError());
-		}
-
-		catch (Exception e)
+		} catch (Exception e)
 		{
-			String message = "Error encountered during projector model delete request: ";
-			log.error(message + " {}", e.getLocalizedMessage());
+			// Unexpected errors
+			String message = "Unexpected error encountered during projector model deletion.";
+			log.error("{} Error: {}", message, e.getLocalizedMessage());
 			return ResponseEntity.internalServerError().body(message + e.getMessage());
 		}
 	}
@@ -627,6 +681,7 @@ public class ProjectorController
 			log.info("Call to /assign-projector received.");
 
 			ResponseDto responseDto = new ResponseDto();
+			String message;
 
 			String modelName = projectorDto.getModel();
 			String classroomName = projectorDto.getClassroom();
@@ -637,11 +692,15 @@ public class ProjectorController
 			Classroom classroomEntity = classroomOpt
 					.orElseThrow(() -> new ProjectorServerException(499, "Classroom does not exist."));
 
+			log.debug("Classroom successfully retreived...");
+
 			// Check if the projector model exists.
 			Optional<ProjectorModel> projectorModelOpt = this.projectorModelRepository.findById(modelName);
 
 			ProjectorModel projectorModelEntity = projectorModelOpt
 					.orElseThrow(() -> new ProjectorServerException(499, "Projector Model does not exist."));
+
+			log.debug("Projector model successfully retreived...");
 
 			// Si la ejecución alcanza este punto es que ambas entidades existen.
 
@@ -653,8 +712,12 @@ public class ProjectorController
 
 			this.projectorRepository.save(projectorEntity);
 
+			message = "Projector " + modelName + " successfully assigned to classroom " + classroomName + ".";
+
+			log.debug(message);
+
 			responseDto.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
-			responseDto.setMessage("Asignation sucessful.");
+			responseDto.setMessage(message);
 
 			return ResponseEntity.status(HttpStatus.OK).body(responseDto);
 
@@ -878,18 +941,19 @@ public class ProjectorController
 	@GetMapping(value = "/floors")
 	public ResponseEntity<?> getFloorList()
 	{
-
+		log.info("Call to /floors received.");
 		List<FloorDto> floors = this.floorRepository.findAllDto();
 
+		log.info("Retrieved floors: \n" + floors);
 		return ResponseEntity.ok().body(floors);
 	}
 
 	@GetMapping(value = "/classrooms")
 	public ResponseEntity<?> getClassroomList(@RequestParam(required = true) String floor)
 	{
-
+		log.info("Call to /classrooms received with param : " + floor);
 		List<ClassroomDto> classroom = this.classroomRepository.findDtoListByFloorName(floor);
-
+		log.info("Retrieved classrooms: \n" + classroom);
 		return ResponseEntity.ok().body(classroom);
 	}
 
@@ -921,41 +985,6 @@ public class ProjectorController
 		}
 
 		return ResponseEntity.ok().body(commands);
-	}
-
-	@GetMapping(value = "/ayuda")
-	public ResponseEntity<?> getHelpText(@RequestParam(required = true) String element)
-	{
-
-		ResponseDto responseDto = new ResponseDto();
-		String message = "";
-
-		switch (element)
-		{
-		case "carga-datos":
-			message = """
-					Este formulario permite cargar datos al servidor mediante archivos CSV estructurados. La estructura de los archivos es la siguiente:
-
-					 - Comandos: Campo1, Campo2, Campo3.
-					 - Proyectores: Modelo, Aula, Planta.
-
-					Seleccione los archivos desde su equipo y haga clic en el botón 'Enviar archivo(s)' para confirmar la operación. Después de unos momentos, recibirá una respuesta con el resultado de la operación.
-					""";
-
-			break;
-		case "registra-modelo":
-			message = """
-					Este formulario permite registrar un nuevo modelo en la base de datos del servidor.
-					Ingrese el nombre del modelo que desea registrar y luego haga clic en 'Registrar modelo' para confirmar la acción.
-					Después de unos momentos, recibirá una respuesta con el resultado de la operación.
-					""";
-			break;
-		}
-
-		responseDto.setMessage(message);
-
-		return ResponseEntity.ok().body(responseDto);
-
 	}
 
 }

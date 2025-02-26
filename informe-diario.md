@@ -202,3 +202,25 @@ TODO:
 - Comienzo modularizacion formulario registro proyectores.
     
 **TIEMPO DEDICADO: 6 horas**
+
+# Dia 17 - 26/02/25    
+- Terminado endpoint de asignacion de proyectores.
+- Terminado formulario frontend de asignacion de proyectores con funcionalidad enlazada a backedn.
+- Actualizado endpoint de borrado de proyectores con limitaciones de integridad aplicadas
+- Añadido nuevo DTO para informacion compelta proyectores.
+- Añadido 2 nuevos metodos en repositorio proyectores para recuprar listado de proyectores ordenados.
+- añadido nuevo entpoind que devuelve una pagina (paginable) de proyectores con criterio.
+- Inicio trabajo en frontend para la creacion de la tabla de proyectores interactiva.
+
+- Creación de las funciones basicas de la tabla.
+- Creación de los botones de ordenamiento de la tabla (incompleto)
+- Botones de paginacion (incompleto) y boton de llamada a borrado asingación proyector (incompleto).
+
+
+Por hacer:
+- Conectar boton de desasignar con llamada a servidor.
+- Hacer la función de Toggle de los botones de ordenamiento y paginacion.
+- Revisitar logica peticion ordenamiento tabla
+- Revisitar logica de paginacón.
+
+**TIEMPO DEDICADO: 11.5 horas**
