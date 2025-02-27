@@ -96,7 +96,7 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
             }
         }
         
-        message = "Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
+        message = "MODELS: Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
         //log.info(message);
 		return message;
     }

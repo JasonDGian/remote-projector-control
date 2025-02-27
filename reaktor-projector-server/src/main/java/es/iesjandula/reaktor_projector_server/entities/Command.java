@@ -1,6 +1,7 @@
 package es.iesjandula.reaktor_projector_server.entities;
 
 import es.iesjandula.reaktor_projector_server.entities.ids.CommandId;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;

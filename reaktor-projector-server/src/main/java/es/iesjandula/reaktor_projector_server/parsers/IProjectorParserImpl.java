@@ -208,7 +208,7 @@ public class IProjectorParserImpl implements IProjectorParser
 			}
 		}
 
-		message = "Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
+		message = "PROJECTORS: Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
 		// log.info(message);
 		return message;
 	}

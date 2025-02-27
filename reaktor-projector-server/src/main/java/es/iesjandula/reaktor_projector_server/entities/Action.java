@@ -42,6 +42,10 @@ public class Action
 	@Column( name = "action_name" )
 	private String actionName;
 	
+
+//	@Column( name="description")
+//	private String description;
+	
 	@Override
 	public String toString(){
 		return new StringBuilder()

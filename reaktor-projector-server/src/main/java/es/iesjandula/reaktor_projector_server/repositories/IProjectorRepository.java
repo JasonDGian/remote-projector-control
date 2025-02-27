@@ -1,6 +1,7 @@
 package es.iesjandula.reaktor_projector_server.repositories;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,7 +11,9 @@ import org.springframework.data.repository.query.Param;
 
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorInfoDto;
+import es.iesjandula.reaktor_projector_server.entities.Classroom;
 import es.iesjandula.reaktor_projector_server.entities.Projector;
+import es.iesjandula.reaktor_projector_server.entities.ProjectorModel;
 import es.iesjandula.reaktor_projector_server.entities.ids.ProjectorId;
 
 public interface IProjectorRepository extends JpaRepository<Projector, ProjectorId>
@@ -53,5 +56,7 @@ public interface IProjectorRepository extends JpaRepository<Projector, Projector
 			WHERE LOWER(pro.model.modelName) = LOWER(:modelname) 
 			""")
 	public Integer countProjectorAssociatedModel( @Param("modelname") String modelname );
+	
+
 	
 }

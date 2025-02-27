@@ -135,9 +135,8 @@ public class ICommandPaserImpl implements ICommandParser
                 recordsSkipped++;
             }
         }
-        String message = "Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
-        //log.info(message);
-		return message;
+
+		return "COMMANDS: Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
     }
     
     /**

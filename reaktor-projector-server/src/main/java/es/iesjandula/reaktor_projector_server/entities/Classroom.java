@@ -26,4 +26,12 @@ public class Classroom {
     @ManyToOne
     @JoinColumn(name = "floor_name", referencedColumnName = "floorName", nullable = false)
     private Floor floor;
+
+    
+    
+	@Override
+	public String toString()
+	{
+		return "Classroom " + classroomName + ", Floor = " + floor.getFloorName();
+	}
 }

@@ -216,7 +216,6 @@ TODO:
 - Creación de los botones de ordenamiento de la tabla (incompleto)
 - Botones de paginacion (incompleto) y boton de llamada a borrado asingación proyector (incompleto).
 
-
 Por hacer:
 - Conectar boton de desasignar con llamada a servidor.
 - Hacer la función de Toggle de los botones de ordenamiento y paginacion.
@@ -224,3 +223,34 @@ Por hacer:
 - Revisitar logica de paginacón.
 
 **TIEMPO DEDICADO: 11.5 horas**
+
+    
+**TIEMPO DEDICADO: 6 horas**
+
+# Dia 18 - 27/02/25    
+- Creado endpoint de des-asignación de proyectores.
+- Renombrados enpoints relacionados a los proyectores para mantener consistencia.
+- Añadida la función de Toggle de los botones de ordenamiento y paginacion.
+- Añadida funcionalidad al boton de borrado de asignación de proyector.
+- Añadido recuento de registro en tabla.
+- Conectado cartel de alerta con funcion de recuperacion de registros para tabla proyectores. 
+
+- Creada interfaz e implementación de parseo de aulas y plantas.
+- Creado endpoint para el parseo de aulas y plantas.
+- Integrado en el endpoint de multifichero el parseo de las aulas.
+- Integrado en el frontend un nuevo mecanismo de mensajes para las alertas de parseo.
+- Modificado RichResponseDto para implementar el nuevo mensaje.
+- Cambiados los mensajes de resultado de los parseadores para eliminar títulos en frontend, reduciendo el número de variables involucradas y simplificando el componente FormBox.
+- Crea nueva versión inicial formulario de busqueda de proyector para comandos.
+
+**TIEMPO DEDICADO: 9 horas**
+
+**NOTAS**
+- Actualmente el sistema no permite dar de alta mas de un mismo modelo en el mismo aula, el ID de un proyector fisico es su (aula + modelo). Si deseamos permitir el uso de mas de un mismo modelo en un aula debemos modificar este comportamiento.
+- Revisar errores devueltos por el servidor para reutilizar mas codigos de manera mas generica pero mas categorizada.
+- Revisar los mensajes de debug y los niveles aplicados. Recordar aplicar INFO, WARN, ERROR, DEBUG en backend.
+- Redactar los mensajes de ayuda en formulario gestion datos.
+- Redactar subtitulos de formularios gestion datos.
+- Arreglar presentacion y proporciones formulario desasignar proyector.
+- Insertar descripcion en entidad acciones y modificar parseador en consecuencia.
+

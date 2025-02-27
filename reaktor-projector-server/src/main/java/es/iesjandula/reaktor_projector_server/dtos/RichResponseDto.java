@@ -12,4 +12,5 @@ public class RichResponseDto
 	String status;
 	String message1;
 	String message2;
+	String message3;
 }

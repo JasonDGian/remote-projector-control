@@ -7,7 +7,7 @@ ERROR 495 - Thrown when the model of the projector and the command do not coinci
 ERROR 496 - Thrown when a user tries to upload a projector model that is already stored in the data base or did not provide a model name.
 ERROR 497 - Thrown when a user tries to delete a projector model that is NOT stored in the data base or did not provide a model name.
 ERROR 498 - Thrown when parsing endpoints receive an unsupported format or null file.
-ERROR 499 - Thrown when a problem occurrs during projector asignation process.
+ERROR 499 - Thrown when a problem occurrs during projector asignation or deletion process from the projector-location table.
 
 
 ERROR 591 - "Cannot delete model: There are projectors associated with this model."
