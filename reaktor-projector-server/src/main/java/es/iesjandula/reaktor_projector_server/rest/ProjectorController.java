@@ -31,6 +31,7 @@ import es.iesjandula.reaktor_projector_server.dtos.ProjectorInfoDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorModelDto;
 import es.iesjandula.reaktor_projector_server.dtos.ResponseDto;
 import es.iesjandula.reaktor_projector_server.dtos.RichResponseDto;
+import es.iesjandula.reaktor_projector_server.dtos.ServerEventBatchDto;
 import es.iesjandula.reaktor_projector_server.dtos.ServerEventDto;
 import es.iesjandula.reaktor_projector_server.dtos.SimplifiedServerEventDto;
 import es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto;
@@ -97,17 +98,17 @@ public class ProjectorController
 	@Autowired
 	IFloorRepository floorRepository;
 
-	// ----------------------- HELPING METHODS ------------------------------------
+	// ----------------------------- UTILITY METHODS -------------------------------
 
 	/**
 	 * Validates the uploaded CSV file.
 	 * <p>
-	 * This method checks if the file is empty and if the content type is valid for
-	 * CSV files. It throws a {@link ProjectorServerException} with appropriate
-	 * error codes if the validation fails.
+	 * Ensures the uploaded file is not empty and has a valid content type (CSV). If
+	 * validation fails, a {@link ProjectorServerException} is thrown with an
+	 * appropriate error code and message.
 	 * </p>
 	 *
-	 * @param file The uploaded file to be validated.
+	 * @param file The uploaded {@link MultipartFile} to be validated.
 	 * @throws ProjectorServerException if the file is empty or has an invalid
 	 *                                  content type.
 	 */
@@ -116,33 +117,44 @@ public class ProjectorController
 		// Check if the file is empty
 		if (file.isEmpty())
 		{
+			log.warn("File validation failed: Received an empty CSV file.");
 			throw new ProjectorServerException(490, "ERROR: Empty CSV file received.");
 		}
 
 		String contentType = file.getContentType();
 
 		// Check if the file content type is valid for CSV files
-		if (contentType == null || !contentType.startsWith("text/csv"))
+		if (contentType == null || !contentType.equals("text/csv"))
 		{
+			log.warn("File validation failed: Unsupported file format received. Expected 'text/csv', but got: {}",
+					contentType);
 			throw new ProjectorServerException(498, "ERROR: Unsupported format. Expected format CSV.");
 		}
+
+		log.info("File validation successful: Received a valid CSV file.");
 	}
 
-	// ----------------------- PARSING ENDPOINTS ----------------------- .
+	// --------------------------- END UTILITY METHODS -----------------------------
+
+	// ----------------------------- PARSING METHODS -------------------------------
 
 	/**
 	 * Endpoint to parse classrooms from a CSV file.
-	 * 
+	 * <p>
+	 * This method receives a CSV file containing classroom data, validates it, and
+	 * parses the content. It returns a response indicating success or failure.
+	 * </p>
+	 *
 	 * @param classroomsFile The uploaded CSV file containing classroom data.
-	 * @return A ResponseEntity containing a success or error message.
+	 * @return A {@link ResponseEntity} containing a success or error message.
 	 */
 	@Transactional
 	@PostMapping(value = "/parse-classrooms")
 	public ResponseEntity<?> parseClassrooms(@RequestParam(value = "classrooms.csv") MultipartFile classroomsFile)
 	{
 
-		// Log the incoming request for processing classrooms
-		log.info("Call to '/parse-classrooms' received with file: {}", classroomsFile.getOriginalFilename());
+		// Log the incoming request with the file name
+		log.info("Received request to parse classrooms.");
 
 		String message;
 
@@ -150,173 +162,50 @@ public class ProjectorController
 		try (Scanner scanner = new Scanner(classroomsFile.getInputStream()))
 		{
 
-			// Validate the uploaded file for necessary checks
 			this.validateFile(classroomsFile);
 
-			// Log the start of parsing
-			log.debug("Starting to parse the classrooms from the CSV file.");
+			// Log the successful file validation
+			log.info("Projectors file successfully validated.");
 
-			// Parse the classrooms from the CSV file using the classroomParser
+			// Parse the classrooms from the CSV file (parser returns a string with a
+			// result.)
 			message = classroomParser.parseClassroom(scanner);
-
-			// Log the result of the parsing operation
-			log.info("CLASSROOM TABLE - {}", message);
 
 			// Wrap the result in a ResponseDto
 			ResponseDto response = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, message);
 
-			// Return a success response with the result
+			// Return a success response
 			log.debug("Returning success response with status: {}", HttpStatus.CREATED);
 			return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
 		} catch (IOException e)
 		{
-			// Log and return an error response in case of an IO exception (e.g., reading
-			// the file)
-			log.error("Error reading the file '{}': {}", classroomsFile.getOriginalFilename(), e.getMessage(), e);
+			// Log file reading errors
+			log.error("IO error while reading classrooms file: {}", e.getMessage(), e);
 			return ResponseEntity.internalServerError().body("Error encountered while reading the file.");
 
 		} catch (ProjectorServerException e)
 		{
-			// Log and return an error response for custom exceptions (specific to projector
-			// server)
-			log.error("Projector server error while processing file '{}': {}", classroomsFile.getOriginalFilename(),
-					e.getMessage(), e);
+			// Log custom projector server exceptions
+			log.error("Projector server error while processing classrooms file: {}", e.getMessage(), e);
 			return ResponseEntity.internalServerError().body(e.getMapError());
 
 		} catch (Exception e)
 		{
-			// Catch any unexpected exceptions and log the error
-			log.error("Unexpected error occurred while processing file '{}': {}", classroomsFile.getOriginalFilename(),
-					e.getMessage(), e);
+			// Log unexpected errors
+			log.error("Unexpected error while processing classrooms file: {}", e.getMessage(), e);
 			return ResponseEntity.internalServerError().body("ERROR: Unexpected exception occurred.");
 		}
 	}
 
 	/**
-	 * Handles the parsing of multiple CSV files: projectors and commands. This
-	 * endpoint accepts optional files and processes them accordingly. If no files
-	 * are provided, it returns an error response.
-	 * 
+	 * Handles the upload and parsing of a CSV file containing projector model data.
 	 * <p>
-	 * The method performs the following steps:
-	 * <ul>
-	 * <li>Validates the received files.</li>
-	 * <li>Parses the projectors file if provided.</li>
-	 * <li>Parses the commands file if provided.</li>
-	 * <li>Returns a structured response with parsing results.</li>
-	 * </ul>
-	 * </p>
-	 * 
-	 * @param projectorsFile Multipart file containing projector data (Optional).
-	 * @param commandsFile   Multipart file containing command data (Optional).
-	 * @return ResponseEntity containing a success message or error response.
-	 * @throws ProjectorServerException If an issue occurs related to the server
-	 *                                  logic.
-	 * @throws IOException              If there is an error reading the provided
-	 *                                  files.
-	 * @throws Exception                If an unexpected error occurs.
-	 */
-	@Transactional
-	@PostMapping("/parse-multifile")
-	public ResponseEntity<?> parseMultifile(
-	        @RequestParam(value = "classrooms.csv", required = false) MultipartFile classroomsFile,
-	        @RequestParam(value = "projectors.csv", required = false) MultipartFile projectorsFile,
-	        @RequestParam(value = "commands.csv", required = false) MultipartFile commandsFile)
-	{
-	    try
-	    {
-	        log.info("Call to /parse-multifile received.");
-	        String message = ""; // Message to be returned in the response DTO.
-	        RichResponseDto richResponseDto = new RichResponseDto();
-
-	        // ERROR 498 - No files received, aborting operation.
-	        if ((classroomsFile == null || classroomsFile.isEmpty()) && (commandsFile == null || commandsFile.isEmpty())
-	                && (projectorsFile == null || projectorsFile.isEmpty()))
-	        {
-	            message = "No files received for parse operation.";
-	            log.error(message);
-	            throw new ProjectorServerException(498, message);
-	        }
-
-	        // Processing classrooms file if provided.
-	        if (classroomsFile == null || classroomsFile.isEmpty())
-	        {
-	            log.info("No 'classrooms.csv' file received.");
-	            richResponseDto.setMessage3("The request did not include a file for classrooms.");
-	        } else
-	        {
-	            log.info("Now calling Classrooms parser.");
-	            try (Scanner scanner = new Scanner(classroomsFile.getInputStream()))
-	            {
-	                this.validateFile(classroomsFile); // Validate file format before processing.
-	                richResponseDto.setMessage3(this.classroomParser.parseClassroom(scanner)); // Process classrooms file.
-	            }
-	        }
-
-	        // Processing projectors file if provided.
-	        if (projectorsFile == null || projectorsFile.isEmpty())
-	        {
-	            log.info("No 'projectors.csv' file received.");
-	            richResponseDto.setMessage2("The request did not include a file for projectors.");
-	        } else
-	        {
-	            // Try with for automatic scanner closure.
-	            try (Scanner scanner = new Scanner(projectorsFile.getInputStream()))
-	            {
-	                this.validateFile(projectorsFile); // Validate file format before processing.
-	                richResponseDto.setMessage2(projectorParser.parseProjectors(scanner)); // Process projectors file.
-	            }
-	        }
-
-	        // Processing commands file if provided.
-	        if (commandsFile == null || commandsFile.isEmpty())
-	        {
-	            log.info("No 'commands.csv' file received.");
-	            richResponseDto.setMessage1("The request did not include a file for commands.");
-	        } else
-	        {
-	            // Try with for automatic scanner closure.
-	            try (Scanner scanner = new Scanner(commandsFile.getInputStream()))
-	            {
-	                this.validateFile(commandsFile); // Validate file format before processing.
-	                richResponseDto.setMessage1(this.commandsParser.parseCommands(scanner)); // Process commands file.
-	            }
-	        }
-
-	        // Setting up the response object.
-	        richResponseDto.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
-
-	        log.info("Commands: " + richResponseDto.getMessage1() + "\nProjectors: " + richResponseDto.getMessage2()
-	                + "\nClassrooms: " + richResponseDto.getMessage3());
-
-	        return ResponseEntity.ok(richResponseDto);
-
-	    } catch (ProjectorServerException e)
-	    {
-	        // Custom exception.
-	        log.error("Projector server error: {}", e.getMessage(), e);
-	        return ResponseEntity.internalServerError().body(e.getMapError());
-	    } catch (IOException e)
-	    {
-	        log.error("Error reading the file: {}", e.getMessage(), e);
-	        return ResponseEntity.internalServerError().body("Error encountered while reading the file.");
-	    } catch (Exception e)
-	    {
-	        // Por si las moscas.
-	        log.error("Unexpected error: {}", e.getMessage(), e);
-	        return ResponseEntity.internalServerError().body("ERROR: Unexpected exception occurred.");
-	    }
-	}
-
-
-	/**
-	 * Handles the upload and parsing of a CSV file containing model data.
-	 * <p>
-	 * This endpoint receives a CSV file, reads its content, and processes the data
-	 * using the {@code projectorModelsParser}. The file is validated to ensure it
-	 * is not empty and that it is in CSV format. If an error occurs during parsing,
-	 * an appropriate error message is returned to the client.
+	 * This endpoint receives a CSV file (expected to be named "models.csv"), reads
+	 * its content, and processes the data using the {@code projectorModelsParser}.
+	 * The file is validated to ensure it is not empty and is in CSV format. If an
+	 * error occurs during parsing, an appropriate error message is returned to the
+	 * client.
 	 * </p>
 	 *
 	 * @param file The CSV file containing projector model data, expected as
@@ -329,8 +218,10 @@ public class ProjectorController
 	public ResponseEntity<?> parseModels(@RequestParam("models.csv") MultipartFile file)
 	{
 
-		// Log the incoming request for processing models
-		log.info("Call to '/parse-models' received.");
+		// Log the incoming request for processing models with a unique request ID for
+		// traceability.
+		log.info("Received request to parse projector models.");
+
 		String message;
 
 		// Use "try-with-resources" to automatically close the scanner when done with
@@ -338,83 +229,34 @@ public class ProjectorController
 		try (Scanner scanner = new Scanner(file.getInputStream()))
 		{
 
-			// Validate the file before processing
+			// Validate the file (empty check, CSV format check)
 			this.validateFile(file);
+
+			// Log validation success
+			log.info("Models file successfully validated.");
 
 			// Parse the models from the CSV file using the projectorModelsParser
 			message = projectorModelsParser.parseProjectorModels(scanner);
 
-			// Log the result of the parsing operation
-			log.info("MODELS TABLE - " + message);
-
+			// Create and return a success response with the parsed message
 			ResponseDto response = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, message);
-
-			// Return a success response with the result
 			return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
 		} catch (IOException e)
 		{
 			// Log and return an error response in case of an IO exception (e.g., reading
 			// the file)
-			log.error("Error reading the file: {}", e.getMessage(), e);
+			log.error("Error reading models file: {}", e.getMessage(), e);
 			return ResponseEntity.internalServerError().body("Error encountered while reading the file.");
 		} catch (ProjectorServerException e)
 		{
-			// Log and return an error response for custom exceptions
-			log.error("Projector server error: {}", e.getMessage(), e);
+			// Log and return an error response for custom exceptions (e.g., parsing issues)
+			log.error("Projector server error processing models file: {}", e.getMessage(), e);
 			return ResponseEntity.internalServerError().body(e.getMapError());
 		} catch (Exception e)
 		{
-			// Catch any unexpected exceptions and log the error
-			log.error("Unexpected error: {}", e.getMessage(), e);
-			return ResponseEntity.internalServerError().body("ERROR: Unexpected exception occurred.");
-		}
-
-		// -----------------------------------
-
-	}
-
-	@Transactional
-	@PostMapping("/parse-commands")
-	public ResponseEntity<?> parseCommands(@RequestParam("commands.csv") MultipartFile file)
-	{
-
-		log.info("Call to commands parser received.");
-
-		// Message that will be returned to the client.
-		String message;
-
-		try (Scanner scanner = new Scanner(file.getInputStream()))
-		{
-
-			// Validate the file before processing
-			this.validateFile(file);
-
-			message = commandsParser.parseCommands(scanner);
-
-			log.info("COMMANDS TABLE - " + message);
-
-			ResponseDto response = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, message);
-
-			// Return a success response with the result
-			return ResponseEntity.status(HttpStatus.CREATED).body(response);
-		}
-		// Input output exception catch.
-		catch (IOException e)
-		{
-			log.error("Error reading the file: {}", e.getMessage(), e);
-			return ResponseEntity.internalServerError().body("Error encountered while reading the file.");
-		}
-		// Custom exception.
-		catch (ProjectorServerException e)
-		{
-			log.error("Projector server error: {}", e.getMessage(), e);
-			return ResponseEntity.internalServerError().body(e.getMapError());
-		}
-		// Por si las moscas.
-		catch (Exception e)
-		{
-			log.error("Unexpected error: {}", e.getMessage(), e);
+			// Log and return an error response for unexpected exceptions
+			log.error("Unexpected error occurred while processing models file: {}", e.getMessage(), e);
 			return ResponseEntity.internalServerError().body("ERROR: Unexpected exception occurred.");
 		}
 	}
@@ -422,59 +264,273 @@ public class ProjectorController
 	/**
 	 * Handles the upload and parsing of a CSV file containing projector data.
 	 * <p>
-	 * This endpoint receives a CSV file, reads its contents, and processes the data
-	 * using the {@code projectorParser}. In case of an error, an appropriate error
-	 * message is returned.
+	 * This endpoint receives a CSV file (expected to be named "projectors.csv"),
+	 * reads its contents, and processes the data using the {@code projectorParser}.
+	 * In case of an error during the processing or parsing, an appropriate error
+	 * message is returned to the client.
 	 * </p>
 	 *
 	 * @param file The CSV file containing projector data, expected as
 	 *             "projectors.csv".
-	 * @return A {@link ResponseEntity} with the parsing result or an error message.
+	 * @return A {@link ResponseEntity} containing the parsing result or an error
+	 *         message.
 	 */
 	@Transactional
 	@PostMapping("/parse-projectors")
 	public ResponseEntity<?> parseProjectors(@RequestParam("projectors.csv") MultipartFile file)
 	{
 
-		log.info("Call to projectors parser received.");
+		// Log the incoming request to parse the projectors data file.
+		log.info("Received request to parse projectors.");
 
 		String message;
 		try (Scanner scanner = new Scanner(file.getInputStream()))
 		{
 
-			// Validate the file before processing
+			// Validate the file before processing (check if it is non-empty and is in CSV
+			// format).
 			this.validateFile(file);
 
-			// Parse the CSV file and obtain a result message
+			// Log the successful file validation
+			log.info("Projectors file successfully validated.");
+
+			// Parse the CSV file using the projectorParser and obtain a result message
 			message = projectorParser.parseProjectors(scanner);
 
-			log.info("PROJECTORS TABLE - " + message);
-
+			// Create and return a success response with the parsing message
 			ResponseDto response = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, message);
-
-			// Return a success response with the result
 			return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-		}
-		// Input output exception catch.
-		catch (IOException e)
+		} catch (IOException e)
 		{
-			log.error("Error reading the file: {}", e.getMessage(), e);
+			// Log and return an error response in case of an IO exception (e.g., issue
+			// reading the file)
+			log.error("Error reading file '{}': {}", file.getOriginalFilename(), e.getMessage(), e);
 			return ResponseEntity.internalServerError().body("Error encountered while reading the file.");
-		}
-		// Custom exception.
-		catch (ProjectorServerException e)
+		} catch (ProjectorServerException e)
 		{
+			// Log and return an error response for custom exceptions (e.g., parsing or
+			// business logic errors)
+			log.error("Projector server error processing file '{}': {}", file.getOriginalFilename(), e.getMessage(), e);
+			return ResponseEntity.internalServerError().body(e.getMapError());
+		} catch (Exception e)
+		{
+			// Log and return an error response for unexpected exceptions (fallback)
+			log.error("Unexpected error occurred while processing file '{}': {}", file.getOriginalFilename(),
+					e.getMessage(), e);
+			return ResponseEntity.internalServerError().body("ERROR: Unexpected exception occurred.");
+		}
+	}
+
+	/**
+	 * Endpoint to parse commands from a CSV file.
+	 * <p>
+	 * This method receives a CSV file containing command data, validates the file,
+	 * and parses the content. It returns a response indicating success or failure.
+	 * </p>
+	 *
+	 * @param file The uploaded CSV file containing command data.
+	 * @return A {@link ResponseEntity} containing a success or error message.
+	 */
+	@Transactional
+	@PostMapping("/parse-commands")
+	public ResponseEntity<?> parseCommands(@RequestParam("commands.csv") MultipartFile file)
+	{
+
+		// Log the incoming request, including the file name for traceability
+		log.info("Received request to parse commands.");
+
+		// Message that will be returned to the client after processing
+		String message;
+
+		// Use "try-with-resources" to automatically close the scanner after use
+		try (Scanner scanner = new Scanner(file.getInputStream()))
+		{
+
+			// Validate the file (checks for format, empty file, etc.)
+			this.validateFile(file);
+
+			// Log the successful file validation
+			log.info("Commands file successfully validated.");
+
+			// Parse the commands from the CSV file using commandsParser
+			message = commandsParser.parseCommands(scanner);
+
+			// Create and return a success response with the parsing message
+			ResponseDto response = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, message);
+			return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+		} catch (IOException e)
+		{
+			// Log the IO error when reading the file
+			log.error("IO error while reading file '{}': {}", file.getOriginalFilename(), e.getMessage(), e);
+			return ResponseEntity.internalServerError().body("Error encountered while reading the file.");
+
+		} catch (ProjectorServerException e)
+		{
+			// Log and return custom errors related to the projector server (parsing or
+			// business logic errors)
+			log.error("Projector server error while processing commands file '{}': {}", file.getOriginalFilename(),
+					e.getMessage(), e);
+			return ResponseEntity.internalServerError().body(e.getMapError());
+
+		} catch (Exception e)
+		{
+			// Log unexpected errors to capture any other issues
+			log.error("Unexpected error while processing commands file '{}': {}", file.getOriginalFilename(),
+					e.getMessage(), e);
+			return ResponseEntity.internalServerError().body("ERROR: Unexpected exception occurred.");
+		}
+	}
+
+	/**
+	 * Handles the parsing of multiple CSV files: projectors, commands, and
+	 * classrooms. This endpoint accepts optional files and processes them
+	 * accordingly. If no files are provided, it returns an error response.
+	 * <p>
+	 * The method performs the following steps:
+	 * <ul>
+	 * <li>Validates the received files.</li>
+	 * <li>Parses the projectors file if provided.</li>
+	 * <li>Parses the commands file if provided.</li>
+	 * <li>Parses the classrooms file if provided.</li>
+	 * <li>Returns a structured response with parsing results.</li>
+	 * </ul>
+	 * </p>
+	 *
+	 * @param classroomsFile Multipart file containing classroom data (Optional).
+	 * @param projectorsFile Multipart file containing projector data (Optional).
+	 * @param commandsFile   Multipart file containing command data (Optional).
+	 * @return ResponseEntity containing a success message or error response.
+	 * @throws ProjectorServerException If an issue occurs related to the server
+	 *                                  logic.
+	 * @throws IOException              If there is an error reading the provided
+	 *                                  files.
+	 * @throws Exception                If an unexpected error occurs.
+	 */
+	@Transactional
+	@PostMapping("/parse-multifile")
+	public ResponseEntity<?> parseMultifile(
+			@RequestParam(value = "classrooms.csv", required = false) MultipartFile classroomsFile,
+			@RequestParam(value = "projectors.csv", required = false) MultipartFile projectorsFile,
+			@RequestParam(value = "commands.csv", required = false) MultipartFile commandsFile)
+	{
+
+		try
+		{
+			log.info("Call to parse multiple files received.");
+
+			// Initialize message and response DTO for structured results.
+			String message = "";
+			RichResponseDto richResponseDto = new RichResponseDto();
+
+			// Check if no files were received, and return an error message.
+			if ((classroomsFile == null || classroomsFile.isEmpty()) && (commandsFile == null || commandsFile.isEmpty())
+					&& (projectorsFile == null || projectorsFile.isEmpty()))
+			{
+				message = "No files received for parse operation.";
+				log.error(message);
+				throw new ProjectorServerException(498, message); // Custom error for no files received.
+			}
+
+			// NOTE: IF YOU ARE MODIFYING THIS KEEP IN MIND THE PARSING ORDER MATTERS TO
+			// KEEP A CONSISTENT RESULT MESSAGE. 
+			// BEST ORDER IS: CLASSROOMS > PROJECTORS > COMMANDS.
+
+			// Process classrooms file if provided.
+			if (classroomsFile != null && !classroomsFile.isEmpty())
+			{
+				log.info("Processing 'classrooms.csv' file.");
+				try (Scanner scanner = new Scanner(classroomsFile.getInputStream()))
+				{
+					this.validateFile(classroomsFile); // Validate the file before processing.
+					richResponseDto.setMessage3(this.classroomParser.parseClassroom(scanner)); // Parse classrooms.
+				}
+			} else
+			{
+				log.info("No 'classrooms.csv' file received.");
+				richResponseDto.setMessage3("The request did not include a file for classrooms.");
+			}
+
+			// Process projectors file if provided.
+			if (projectorsFile != null && !projectorsFile.isEmpty())
+			{
+				log.info("Processing 'projectors.csv' file.");
+				try (Scanner scanner = new Scanner(projectorsFile.getInputStream()))
+				{
+					this.validateFile(projectorsFile); // Validate the file before processing.
+					richResponseDto.setMessage2(projectorParser.parseProjectors(scanner)); // Parse projectors.
+				}
+			} else
+			{
+				log.info("No 'projectors.csv' file received.");
+				richResponseDto.setMessage2("The request did not include a file for projectors.");
+			}
+
+			// Process commands file if provided.
+			if (commandsFile != null && !commandsFile.isEmpty())
+			{
+				log.info("Processing 'commands.csv' file.");
+				try (Scanner scanner = new Scanner(commandsFile.getInputStream()))
+				{
+					this.validateFile(commandsFile); // Validate the file before processing.
+					richResponseDto.setMessage1(this.commandsParser.parseCommands(scanner)); // Parse commands.
+				}
+			} else
+			{
+				log.info("No 'commands.csv' file received.");
+				richResponseDto.setMessage1("The request did not include a file for commands.");
+			}
+
+			// Set response status to success.
+			richResponseDto.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
+
+			// Log the final parsing results.
+			log.info("Commands: {}\nProjectors: {}\nClassrooms: {}", richResponseDto.getMessage1(),
+					richResponseDto.getMessage2(), richResponseDto.getMessage3());
+
+			// Return the structured response DTO with success status.
+			return ResponseEntity.ok(richResponseDto);
+
+		} catch (ProjectorServerException e)
+		{
+			// Handle custom exceptions (e.g., invalid input, no files received).
 			log.error("Projector server error: {}", e.getMessage(), e);
 			return ResponseEntity.internalServerError().body(e.getMapError());
-		}
-		// Por si las moscas.
-		catch (Exception e)
+
+		} catch (IOException e)
 		{
+			// Handle IO errors when reading the files.
+			log.error("Error reading the file: {}", e.getMessage(), e);
+			return ResponseEntity.internalServerError().body("Error encountered while reading the file.");
+
+		} catch (Exception e)
+		{
+			// Catch any unexpected errors.
 			log.error("Unexpected error: {}", e.getMessage(), e);
 			return ResponseEntity.internalServerError().body("ERROR: Unexpected exception occurred.");
 		}
 	}
+
+	// --------------------------- END PARSING METHODS -----------------------------
+
+	
+	// -------------------------- SERVER EVENT METHODS -----------------------------
+	// ------------------------ END SERVER EVENT METHODS ---------------------------
+	// -----------------------------------------------------------------------------
+	// ---------------------------- PROJECTOR METHODS ------------------------------
+	// -------------------------- END PROJECTOR METHODS ----------------------------
+	// -----------------------------------------------------------------------------
+	// ---------------------------- PROJECTOR METHODS ------------------------------
+	// -------------------------- END PROJECTOR METHODS ----------------------------
+	// -----------------------------------------------------------------------------
+	// ---------------------------- PROJECTOR METHODS ------------------------------
+	// -------------------------- END PROJECTOR METHODS ----------------------------
+	// -----------------------------------------------------------------------------
+
+	// ----------------------- HELPING METHODS ------------------------------------
+
+	// ----------------------- PARSING ENDPOINTS ----------------------- .
 
 	// -------------------- UPLOAD AND DELETE RECORDS ENDPOINTS --------------------
 
@@ -871,128 +927,159 @@ public class ProjectorController
 
 	// --------------------- SERVER EVENT ENDPOINTS --------------------------------
 
-	/**
-	 * Endpoint para que los usuarios envien las acciones al servidor. Este endpoint
-	 * almacena en la tabla EVENTOS SERVIDOR una accion que luego el
-	 * microcontrolador recuperara para saber que decirle al proyector que debe de
-	 * hacer. Para guardar el evento es necesario: ID Evento - Automaticamente
-	 * generado. Fecha evento - Generada mediante el metodo. Usuario Autor -
-	 * Parametro de la petición. Comando - Comando que se quiere enviar al
-	 * proyector. Proyector - Proyecto al que se quiere enviar la orden.
-	 */
+	public ServerEvent createServerEventEntity(String projectorModelName, String projectorClassroom,
+			String commandActionName) throws ProjectorServerException
+	{
+
+		// Check if any of the parameters is null or empty/blank string.
+		if (projectorModelName == null || projectorModelName.isBlank() || projectorClassroom == null
+				|| projectorClassroom.isBlank() || commandActionName == null || commandActionName.isBlank())
+		{
+			// if blank or null throw exception.
+			throw new ProjectorServerException(505, "Null parameter received while during server event creation.");
+		}
+
+		// log call.
+		log.info("Creating '" + commandActionName + "' event for projector '" + projectorModelName + "' in classroom "
+				+ projectorClassroom);
+
+		/* -------------- FORMING PROJECTOR ENTITY -------------- */
+		// This block contains the logic to retreive the entities related to the
+		// projector entiy.
+
+		// Check if the model name exists.
+		Optional<ProjectorModel> projectorModelOpt = this.projectorModelRepository.findById(projectorModelName);
+
+		// If the model exists, stores in entity, otherwise throws new exception and
+		// logs error.
+		ProjectorModel projectorModelEntity = projectorModelOpt.orElseThrow(() ->
+		{
+			String message = "The projector model '" + projectorModelName + "' does not exist.";
+			log.error(message);
+			return new ProjectorServerException(494, message);
+		});
+
+		log.debug("PROJECTOR MODEL RETRIEVED: " + projectorModelEntity.toString());
+
+		// Check if the classroom exists.
+		Optional<Classroom> classroomOpt = this.classroomRepository.findById(projectorClassroom);
+
+		// If the classroom exists, stores in entity, otherwise throws new exception and
+		// logs error.
+		Classroom classroomEntity = classroomOpt.orElseThrow(() ->
+		{
+			String message = "The classroom " + projectorClassroom + " does not exist.";
+			log.error(message);
+			return new ProjectorServerException(494, message);
+		});
+
+		log.debug("CLASSROOM RETRIEVED: " + classroomEntity.toString());
+
+		// Create composite projector ID.
+		ProjectorId projectorId = new ProjectorId();
+		projectorId.setClassroom(classroomEntity);
+		projectorId.setModel(projectorModelEntity);
+
+		// Check if the projector exists.
+		Optional<Projector> projectorOpt = this.projectorRepository.findById(projectorId);
+		Projector projectorEntity = projectorOpt.orElseThrow(() ->
+		{
+			String message = "The projector model '" + projectorModelName + " in classroom " + projectorClassroom
+					+ "' does not exist.";
+			log.error(message);
+			return new ProjectorServerException(494, message);
+		});
+
+		log.debug("PROJECTOR UNIT RETRIEVED: " + projectorEntity.toString());
+
+		/* -------------------- END FORMING PROJECTOR ENTITY -------------------- */
+
+		/* -------------------- RETREIVE COMMAND ENTITY -------------------- */
+
+		// Check if the action exists.
+		Optional<Action> actionOpt = this.actionRepositories.findById(commandActionName);
+
+		Action actionEntity = actionOpt.orElseThrow(() ->
+		{
+			String message = "The given action '" + commandActionName + "' does not exist.";
+			log.error(message);
+			return new ProjectorServerException(494, message);
+		});
+
+		log.debug("COMMAND ACTION RETRIEVED: " + actionEntity.toString());
+
+		// Search for a command for the given model and action.
+		Optional<Command> commandOpt = this.commandRepository.findByModelNameAndAction(projectorModelEntity,
+				actionEntity);
+
+		Command commandEntity = commandOpt.orElseThrow(() ->
+		{
+			String message = "No command found in DB for model " + projectorModelName + " to perform action "
+					+ commandActionName;
+			log.error(message);
+			return new ProjectorServerException(494, message);
+		});
+
+		log.debug("COMMAND RETRIEVED: " + commandEntity.toString());
+
+		/* -------------- END RETREIVE COMMAND ENTITY -------------- */
+
+		/* -------------- SET OTHER PARAMETERS FOR THE EVENT -------------- */
+
+		// Tomar fecha actual.
+		LocalDateTime dateTime = LocalDateTime.now();
+
+		// Tomar usuario.
+		String user = "TO DO";
+
+		// Asignar estado por defecto.
+		String defaultStatus = Constants.EVENT_STATUS_PENDING;
+
+		// Crear nuevo objeto server event y asignar valores.
+		ServerEvent serverEventEntity = new ServerEvent();
+
+		serverEventEntity.setCommand(commandEntity);
+		serverEventEntity.setProjector(projectorEntity);
+		serverEventEntity.setActionStatus(defaultStatus);
+		serverEventEntity.setDateTime(dateTime);
+		serverEventEntity.setUser(user);
+
+		// Guardar objeto en bbdd.
+		return serverEventEntity;
+	}
+
 	@Transactional
-	@PostMapping(value = "/server-events")
-	public ResponseEntity<?> createServerEvent(@RequestBody(required = true) ServerEventDto serverEventDto)
+	@PostMapping(value = "/server-events-batch")
+	public ResponseEntity<?> createServerEventBatch(
+			@RequestBody(required = true) ServerEventBatchDto serverEventBatchDto)
 	{
 		try
 		{
+			String commandActionName = serverEventBatchDto.getAction();
+			List<ProjectorDto> projectorList = serverEventBatchDto.getProjectorList();
+			List<ServerEvent> serverEventList = new ArrayList<>();
 
-			String projectorModelName = serverEventDto.getProjectorDto().getModel();
-
-			String projectorClassroom = serverEventDto.getProjectorDto().getClassroom();
-
-			String commandModelName = serverEventDto.getCommandDto().getModelName();
-
-			String commandActionName = serverEventDto.getCommandDto().getAction();
-
-			String commandCommand = serverEventDto.getCommandDto().getCommand();
-
-			log.info("Call to '/server-events' received with parameters: \n" + " - projector: "
-					+ String.valueOf(projectorModelName) + " - " + String.valueOf(projectorClassroom) + "\n - command: "
-					+ String.valueOf(commandModelName) + " - " + String.valueOf(commandActionName) + " - "
-					+ String.valueOf(commandCommand));
-
-			// Comprobar que el modelo del proyector exista
-			Optional<ProjectorModel> projectorModelOpt = this.projectorModelRepository.findById(projectorModelName);
-			ProjectorModel projectorModelEntity = projectorModelOpt.orElseThrow(() -> new ProjectorServerException(494,
-					"The projector model '" + projectorModelName + "' does not exist."));
-			log.debug("PROJECTOR MODEL RETRIEVED: " + projectorModelEntity.toString());
-
-			// Comprobar que la clase exista.
-			Optional<Classroom> classroomOpt = this.classroomRepository.findById(projectorClassroom);
-
-			Classroom classroomEntity = classroomOpt.orElseThrow(() -> new ProjectorServerException(494,
-					"The classroom " + projectorClassroom + " does not exist."));
-			log.debug("CLASSROOM RETRIEVED: " + classroomEntity.toString());
-
-			// Comprobar que el proyector exista.
-			ProjectorId projectorId = new ProjectorId();
-			projectorId.setClassroom(classroomEntity);
-			projectorId.setModel(projectorModelEntity);
-
-			Optional<Projector> projectorOpt = this.projectorRepository.findById(projectorId);
-			Projector projectorEntity = projectorOpt
-					.orElseThrow(() -> new ProjectorServerException(494, "The projector model '" + projectorModelName
-							+ " in classroom " + projectorClassroom + "' does not exist."));
-			log.debug("PROJECTOR UNIT RETRIEVED: " + projectorEntity.toString());
-
-			// Comprobar que la acción exista.
-			Optional<Action> actionOpt = this.actionRepositories.findById(commandActionName);
-			Action actionEntity = actionOpt.orElseThrow(() -> new ProjectorServerException(494,
-					"The given action '" + commandActionName + "' does not exist."));
-			log.debug("COMMAND ACTION RETRIEVED: " + actionEntity.toString());
-
-			// Comprobar que el modelo del comando exista.
-			Optional<ProjectorModel> commandProjectorModelOpt = this.projectorModelRepository
-					.findById(commandModelName);
-			ProjectorModel commandProjectorModelEntity = commandProjectorModelOpt
-					.orElseThrow(() -> new ProjectorServerException(494,
-							"The projector model '" + commandModelName + "' does not exist."));
-			log.debug("COMMAND MODEL RETRIEVED: " + commandProjectorModelEntity.toString());
-
-			// comprobar que la orden exista.
-			CommandId commandId = new CommandId();
-			commandId.setAction(actionEntity);
-			commandId.setModelName(commandProjectorModelEntity);
-			commandId.setCommand(commandCommand);
-
-			Optional<Command> commandOpt = this.commandRepository.findById(commandId);
-			Command commandEntity = commandOpt.orElseThrow(
-					() -> new ProjectorServerException(494, "The command '" + commandId + "' does not exist."));
-			log.debug("COMMAND RETRIEVED: " + commandEntity.toString());
-
-			// comprobar que la orden enviada corresponda al proyector enviado
-			log.debug("Checking for models coincidence..");
-			if (!projectorModelEntity.equals(commandProjectorModelEntity))
+			// For each projector, create an event.
+			for (ProjectorDto projectorDto : projectorList)
 			{
-				String message = "The model " + commandModelName + " and the model " + projectorModelName
-						+ " are not the same.";
-				log.error(message);
-				throw new ProjectorServerException(495, message);
+				serverEventList.add(this.createServerEventEntity(projectorDto.getModel(), projectorDto.getClassroom(),
+						commandActionName));
 			}
 
-			// Tomar fecha actual.
-			LocalDateTime dateTime = LocalDateTime.now();
+			log.info("Saving {} server events to the database.", serverEventList.size());
 
-			// Tomar usuario.
-			// TODO: Crear funcionamiento usuarios.
-			String user = "TO DO";
+			// Save all the events in a single transaction.
+			this.serverEventRepository.saveAllAndFlush(serverEventList);
 
-			// Asignar estado por defecto.
-			// TODO: Establecer los estados que puede tener un evento.
+			// Prepare response object
+			ResponseDto response = new ResponseDto();
+			response.setMessage(serverEventList.size() + " events successfully created.");
+			response.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
 
-			// Crear nuevo objeto server event y asignar valores.
-			ServerEvent serverEventEntity = new ServerEvent();
-
-			serverEventEntity.setCommand(commandEntity);
-			serverEventEntity.setProjector(projectorEntity);
-			serverEventEntity.setActionStatus(Constants.EVENT_STATUS_PENDING);
-			serverEventEntity.setDateTime(dateTime);
-			serverEventEntity.setUser(user);
-
-			// Guardar objeto en bbdd.
-			this.serverEventRepository.saveAndFlush(serverEventEntity);
-
-			String message = "Command sent successfully";
-
-			ResponseDto response = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, message);
-
-			return ResponseEntity.ok().body(response);
+			return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
 		} catch (ProjectorServerException ex)
 		{
-			// do stuff
-			log.error("Error during server event creation: " + ex.getMessage());
 			return ResponseEntity.badRequest().body(ex.getMapError());
 		}
 	}

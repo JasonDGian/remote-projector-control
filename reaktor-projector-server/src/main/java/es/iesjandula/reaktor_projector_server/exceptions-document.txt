@@ -9,5 +9,5 @@ ERROR 497 - Thrown when a user tries to delete a projector model that is NOT sto
 ERROR 498 - Thrown when parsing endpoints receive an unsupported format or null file.
 ERROR 499 - Thrown when a problem occurrs during projector asignation or deletion process from the projector-location table.
 
-
+505, "Null parameter received while during server event creation."
 ERROR 591 - "Cannot delete model: There are projectors associated with this model."

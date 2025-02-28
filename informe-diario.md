@@ -245,7 +245,19 @@ Por hacer:
 
 **TIEMPO DEDICADO: 9 horas**
 
-**NOTAS**
+
+# Dia 19 - 28/02/25    
+- Integrado spinner en front end para formularios.
+- Progreso en pantalla de control remoto.
+- Rediseño de logica de ordenes a proyectores.
+- Comienzo del trabajo en nuevo endpoint de orden por lotes a listado de proyectores.
+- Control de situación y anotación de cambios a implementar.
+- Oros avanzes menores. 
+ 
+**TIEMPO DEDICADO: 8 horas**
+
+
+# **NOTAS**
 - Actualmente el sistema no permite dar de alta mas de un mismo modelo en el mismo aula, el ID de un proyector fisico es su (aula + modelo). Si deseamos permitir el uso de mas de un mismo modelo en un aula debemos modificar este comportamiento.
 - Revisar errores devueltos por el servidor para reutilizar mas codigos de manera mas generica pero mas categorizada.
 - Revisar los mensajes de debug y los niveles aplicados. Recordar aplicar INFO, WARN, ERROR, DEBUG en backend.
@@ -253,4 +265,29 @@ Por hacer:
 - Redactar subtitulos de formularios gestion datos.
 - Arreglar presentacion y proporciones formulario desasignar proyector.
 - Insertar descripcion en entidad acciones y modificar parseador en consecuencia.
+- Los parseadores no controlan que el nombre de los CSV sea correcto o que estos tengan la estructura esperada. Se podria hacer que lo controlen y respondan acorde.
+
+GENERAL
+- Introducir manera de ver solo proyectores encendidos.
+
+FORMULARIOS
+- Introducir alerta confirmación borrado proyectores.
+- Introducir alerta confirmacion borrado modelo.
+- Introducir textos de ayuda en formularios
+- Introducir subtitulos en formularios.
+- Arreglar presentación formulario desasignar proyector.
+- Revisar paleta de colores.
+- Revisar mecanismo de alertas.
+
+CONTROL REMOTO
+- Queda por aclarar el funcionamiento del a asignación de proyectores por aula.
+- Cambiar diseño para respetar la idea de envio de ordenes por lotes.
+- Añadir toggle-switch para la seleccion de proyectores.
+- Cambiar las ordenes especificas por las acciones posibles. 
+
+[REVISAR]
+CREAR PAGINA DE MONITOREO GENERAL Y ORDENES MASIVAS.
+- Pantalla para el apagado de proyectores en masa.
+    -> Tabla que muestra modelo ubicación etc etc... pero también el estado del proyector.
+
 
