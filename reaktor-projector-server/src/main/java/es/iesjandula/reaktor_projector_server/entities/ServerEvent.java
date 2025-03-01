@@ -2,6 +2,7 @@ package es.iesjandula.reaktor_projector_server.entities;
 
 import java.time.LocalDateTime;
 
+import es.iesjandula.reaktor_projector_server.services.DefaultProjectorProvider;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -9,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PreRemove;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -50,9 +52,9 @@ public class ServerEvent
      */
 	@ManyToOne
 	@JoinColumns(
-	{ @JoinColumn(name = "commandModelName", referencedColumnName = "modelName"),
-			@JoinColumn(name = "commandActionName", referencedColumnName = "actionName"),
-			@JoinColumn(name = "commandInstruction", referencedColumnName = "command") })
+	{ @JoinColumn(name = "commandModelName", referencedColumnName = "modelName",nullable = true),
+			@JoinColumn(name = "commandActionName", referencedColumnName = "actionName",nullable = true),
+			@JoinColumn(name = "commandInstruction", referencedColumnName = "command",nullable = true) })
 	private Command command;
 
     /**
@@ -65,8 +67,8 @@ public class ServerEvent
 	@ManyToOne
 	@JoinColumns(
 	{ 
-		@JoinColumn(name = "projectorModel", referencedColumnName = "modelName"),
-		@JoinColumn(name = "projectorClassroom", referencedColumnName = "classroom")
+		@JoinColumn(name = "projectorModel", referencedColumnName = "modelName",nullable = true),
+		@JoinColumn(name = "projectorClassroom", referencedColumnName = "classroom",nullable = true)
 		})
 	private Projector projector;
 

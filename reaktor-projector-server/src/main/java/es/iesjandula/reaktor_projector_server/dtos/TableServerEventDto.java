@@ -11,13 +11,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TableServerEventDto
 {
-
 	private Long eventId;
 	private String action;
 	private String model;
 	private String classroom;
+	private String floor;
 	private String user;
 	private LocalDateTime dateTime;
 	private String actionStatus;
-	
 }

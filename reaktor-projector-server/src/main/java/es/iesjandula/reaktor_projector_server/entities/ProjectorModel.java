@@ -46,6 +46,9 @@ public class ProjectorModel
 	@OneToMany(mappedBy = "model")
 	private List<Projector> associatedProjectors;
 	
+	@OneToMany( mappedBy = "modelName" )
+	private List<Command> associatedCommands;
+	
     /**
      * Constructs a new ProjectorModel with the specified model name.
      * <p>

@@ -26,9 +26,12 @@ public interface IProjectorRepository extends JpaRepository<Projector, Projector
 		        pro.classroom.floor.floorName
 		    ) 
 		    FROM Projector pro 
-		    ORDER BY pro.model.modelName, pro.classroom.floor.floorName, pro.classroom.classroomName
+		    WHERE ( :classroom IS NULL OR pro.classroom.classroomName = :classroom ) 
+		    AND ( :floor IS NULL OR pro.classroom.floor.floorName = :floor ) 
+		    AND ( :model IS NULL OR pro.model.modelName = :model ) 
+		    ORDER BY pro.model.modelName, pro.classroom.floor.floorName, pro.classroom.classroomName 
 		""")
-		public Page<ProjectorInfoDto> getProjectorOrderByModelName(Pageable pageable);
+		public Page<ProjectorInfoDto> getProjectorOrderByModelName(Pageable pageable, String classroom, String floor, String model);
 
 	@Query("""
 		    SELECT new es.iesjandula.reaktor_projector_server.dtos.ProjectorInfoDto( 
@@ -37,9 +40,12 @@ public interface IProjectorRepository extends JpaRepository<Projector, Projector
 		        pro.classroom.floor.floorName
 		    ) 
 		    FROM Projector pro 
-		    ORDER BY pro.classroom.floor.floorName, pro.classroom.classroomName
+		    WHERE ( :classroom IS NULL OR pro.classroom.classroomName = :classroom ) 
+		    AND ( :floor IS NULL OR pro.classroom.floor.floorName = :floor ) 
+		    AND ( :model IS NULL OR pro.model.modelName = :model )
+		    ORDER BY pro.classroom.floor.floorName, pro.classroom.classroomName 
 		""")
-		public Page<ProjectorInfoDto> getProjectorsOrderByFloorAndClassroom(Pageable pageable);
+		public Page<ProjectorInfoDto> getProjectorsOrderByFloorAndClassroom(Pageable pageable, String classroom, String floor, String model);
 
 	@Query(
 			"""

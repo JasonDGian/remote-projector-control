@@ -17,8 +17,18 @@ public final class Constants
 	
 	
 	public static final String EVENT_STATUS_PENDING = "PENDING";
-	public static final String EVENT_STATUS_2 = "";
-	public static final String EVENT_STATUS_3 = "";
-	public static final String EVENT_STATUS_4 = "";
+	public static final String EVENT_STATUS_EXECUTED = "EXECUTED";
+	public static final String EVENT_STATUS_SERVED = "SERVED";
+	public static final String EVENT_STATUS_CANCELED = "CANCELED";
+	public static final String EVENT_STATUS_ERROR = "ERROR";
 	
+	public static final String[] POSSIBLE_EVENTS =
+	{ 		
+		EVENT_STATUS_PENDING, 
+		EVENT_STATUS_CANCELED, 
+		EVENT_STATUS_EXECUTED,
+		EVENT_STATUS_SERVED,
+		EVENT_STATUS_ERROR
+	};
+
 }

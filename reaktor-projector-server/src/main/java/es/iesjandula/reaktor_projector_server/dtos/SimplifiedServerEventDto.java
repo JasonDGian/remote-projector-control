@@ -9,10 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SimplifiedServerEventDto
 {
-	
 	private Long eventId;
 	private String commandInstruction;
 	private String actionStatus;
-
 }
 

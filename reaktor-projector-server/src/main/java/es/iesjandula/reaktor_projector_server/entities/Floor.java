@@ -26,4 +26,8 @@ public class Floor {
     /** List of classrooms located on this floor */
     @OneToMany(mappedBy = "floor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Classroom> classrooms;
+    
+    public Floor( String floorname ){
+    	this.floorName = floorname;
+    }
 }

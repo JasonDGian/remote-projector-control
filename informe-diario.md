@@ -254,8 +254,63 @@ Por hacer:
 - Control de situación y anotación de cambios a implementar.
 - Oros avanzes menores. 
  
-**TIEMPO DEDICADO: 8 horas**
+**TIEMPO DEDICADO: 7 horas**
 
+# Dia 19 - 01/03/25    
+- Comienzo en pagina de envio de ordenes masivos.
+- Diagnosticado problema con el borrado de modelos y proyectores en cascada.
+    - Investigado modo como solventar esto, propuesta de servicio y proveedor de entidades por defecto en sostitución a cascada (requiere mas pruebas.)
+- Terminada primera versión de pantalla de envio de ordenes masivo.
+- Reorganizados algunos endpoints en controlador REST.
+- Documentado y comentado controlador REST en los endpoints modificados.
+- Modificados botones de paginación y de ordenamiento y añadido selector de registros por paginas.
+- Otros cambios menores.
+
+Notas: 
+- Identificada la necesidad de alterar endpoint de recuperación de proyectores a favor de uno filtrado.
+- Identificado el malfuncionamiento de la funcionalidad de 'seleccionar todo' debido al uso de paginación.
+
+**TIEMPO DEDICADO: 7.5 horas**
+
+
+# Dia 20 - 02/03/25    
+- Finalizado pagina envios masivos.
+- Comienzo trabajo en pagina eventos.
+- Creado nuevo endpoint para la gestión del a modificacion del estado de eventos.
+- Creados nuevos componentes y ficheros de configuración en front end.
+
+**TIEMPO DEDICADO: 6.2 horas**
+
+
+# Dia 21 - 03/03/25    
+- Comienzo desarrollo mecanismo registros verticales.
+- Primer diseño de pruebas de registro vertical.
+
+**TIEMPO DEDICADO: 2 horas**
+
+# Dia 22 - 04/03/25    
+- Breve revisión en frio del diseño realizado.
+
+**TIEMPO DEDICADO: 1 horas**
+
+# Dia 23 - 05/03/25    
+- Configuración de los colores de estado para las tarjetas de evento.
+- Configuración de la responsividad de la navbar.
+- Configurada la responsividad de las tarjetas/registros de eventos.
+- Comienzo del desarrollo de las herramientas de paginación y filtrado de registros.
+
+**TIEMPO DEDICADO: 5 horas**
+
+
+# Dia 24 - 06/03/25    
+- terminado de configurar el filtro de ubicacion de la tabla de eventos.
+- implementando filtro de estado de accion.
+- Actualizando endpoint para observar estados de accion.
+- Introducido filtro de estado de acción.
+
+**TIEMPO DEDICADO: 3.5 horas**
+
+NOTAS: hay que controlar la paginacion cuando se aplican filtros en el modelo y plantas.
 
 # **NOTAS**
 - Actualmente el sistema no permite dar de alta mas de un mismo modelo en el mismo aula, el ID de un proyector fisico es su (aula + modelo). Si deseamos permitir el uso de mas de un mismo modelo en un aula debemos modificar este comportamiento.
@@ -291,3 +346,4 @@ CREAR PAGINA DE MONITOREO GENERAL Y ORDENES MASIVAS.
     -> Tabla que muestra modelo ubicación etc etc... pero también el estado del proyector.
 
 
+En el endpoint de solicitud de ordenes, crear un mecanismo que ponga "online" el microcontrolador que ha realizado la solicitud.  Esto usará un servicio de KeepAlive.

@@ -1,11 +1,20 @@
 package es.iesjandula.reaktor_projector_server.entities;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
 import es.iesjandula.reaktor_projector_server.entities.ids.ProjectorId;
+import es.iesjandula.reaktor_projector_server.repositories.IProjectorRepository;
+import es.iesjandula.reaktor_projector_server.services.DefaultProjectorProvider;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PreRemove;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,6 +41,7 @@ import lombok.NoArgsConstructor;
 @IdClass(ProjectorId.class)
 public class Projector
 {
+		
     /**
      * The model of the projector.
      * <p>
@@ -57,6 +67,9 @@ public class Projector
 	@JoinColumn( name = "classroom")
 	private Classroom classroom;
 	
+	@OneToMany(mappedBy = "projector", cascade = CascadeType.REMOVE, orphanRemoval = false)
+	private List<ServerEvent> serverEvents;
+	
 	@Override
 	public String toString() {
 	    return new StringBuilder()
@@ -64,5 +77,5 @@ public class Projector
 	        .append(" | classroom: ").append(this.classroom.getClassroomName() == null ? "N/A" : this.classroom.getClassroomName())
 	        .toString();
 	}
-
+	
 }

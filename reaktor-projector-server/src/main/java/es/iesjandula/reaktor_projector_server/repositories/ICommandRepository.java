@@ -22,4 +22,13 @@ public interface ICommandRepository extends JpaRepository<Command, CommandId >
      List<CommandDto> findCommandsByModel(@Param("modelName") String modelName);
     
     Optional<Command> findByModelNameAndAction(ProjectorModel modelName, Action action);
+    
+    
+	@Query(
+			"""
+			SELECT COUNT(*) 
+			FROM Command cmd 
+			WHERE LOWER(cmd.modelName.modelName) = LOWER(:modelname) 
+			""")
+	public Integer countModelCommands( @Param("modelname") String modelname );
 }
