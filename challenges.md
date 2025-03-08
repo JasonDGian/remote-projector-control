@@ -362,5 +362,49 @@ file.close();
 ## 📍 SD Certificate always percieved as more recent.
 Even ater copying the certificate to the device, the SD certificate, although being the very same, would always be detecetd as more recent.
 This could've happened due to several factors.
-One of them being that the LittleFS and SDfs might handle timestamps differently therefore giving back different  type of results or units. 
+One of them being that the LittleFS and SDfs might handle timestamps differently therefore giving back different type of results or units. To solve this problem I thought of using an NTP server as an external source of precise date time and sync the ESP32 date time with the given one.
+I found this interesting [blog post](https://vasanza.blogspot.com/2021/08/esp32-sincronizar-rtc-interno-con.html).
+
+First thing I included the time library. 
+```cpp
+#include <ESP32Time.h>
+```
+Then create an ESP32Time object which represents the internal real time clock.
+```cpp
+ESP32Time rtc;
+```
+Then configure the NTP request parameters.
+```cpp
+// NPT server config
+const char* ntpServer = "pool.ntp.org"; // Servidor NTP para sincronización horaria.
+const long gmtOffset_sec = 1 * 3600; // Offset de GMT para Madrid (GMT+1).
+const int daylightOffset_sec = 1 * 3600; // Offset adicional para horario de verano (GMT+2 durante verano).
+```
+Now syc the RTC with the ntp values.
+```cpp
+  // Start configuring timezone.
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)) {
+     Serial.println(&timeinfo, "Hora local: %H:%M:%S");
+  } else {
+    Serial.println("Error al obtener la hora.");
+  }
+```
+
+Based on this configuration, we can use the `struct tm` object 'timeinfo' to get the desired information.
+```cpp
+void loop() {
+  // Obtener y mostrar la hora actual periódicamente
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)) {
+    Serial.println(&timeinfo, "Hora local: %H:%M:%S");
+  }
+  delay(1000); // Actualizar cada segundo
+```
+   
+**Another issue arises.**
+Basically, the ESP32's file system libraries (including LittleFS and SD) do not directly provide a function to preserve the creation timestamp during file copy operations. When you copy a file, it will inherit the timestamp of the time when the copy operation occurs. This is not what i want for my project.
+
+However, you can work around this limitation by manually saving the original file's timestamp before copying the file and then applying it to the new file in LittleFS after the copy operation.
 
