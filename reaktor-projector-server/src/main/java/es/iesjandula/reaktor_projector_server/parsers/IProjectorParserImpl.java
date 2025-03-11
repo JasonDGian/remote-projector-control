@@ -21,54 +21,29 @@ import es.iesjandula.reaktor_projector_server.utils.ProjectorServerException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Implementation of {@link IProjectorParser} that parses projector data from a
- * CSV file and updates the database with the parsed information (projector
- * models and classrooms).
+ * Implementation of {@link IProjectorParser} that processes projector data from a CSV file
+ * and updates the database accordingly.
  * 
- * <p>
- * This service processes each line in the CSV file, which contains the
- * projector model name and the classroom identifier. It ensures that the
- * projector model exists in the database, creating a new model if necessary,
- * and associates it with a new projector record.
- * </p>
+ * <p>This service ensures that projector models and classrooms exist in the database,
+ * creating new entries when necessary.</p>
  * 
  * <h2>CSV File Format</h2>
- * <p>
- * The expected format for the CSV file is:
- * </p>
- * 
+ * <p>The expected CSV format:</p>
  * <pre>
- * model_name,classroom
- * Epson EB-S41,0.01
- * BenQ MW535,0.02
- * ViewSonic PX701-4K,0.03
+ * model_name,classroom,floor
+ * Epson EB-S41,0.01,1st Floor
+ * BenQ MW535,0.02,2nd Floor
+ * ViewSonic PX701-4K,0.03,3rd Floor
  * </pre>
- * <p>
- * The first line is ignored as it is assumed to be the header.
- * </p>
- * 
- * <h2>Workflow</h2>
- * <ul>
- * <li>Reads and skips the first line (header).</li>
- * <li>Processes each subsequent line, extracting the projector model and
- * classroom.</li>
- * <li>Checks if the projector model exists in the database. If not, creates and
- * saves it.</li>
- * <li>Checks if the projector unit exists in the database. If not, creates and
- * saves it.</li>
- * <li>Logs and skips duplicate projector entries.</li>
- * </ul>
  * 
  * <h2>Error Handling</h2>
- * <p>
- * If the input CSV file is empty or an error occurs during parsing, a
- * {@link ProjectorServerException} is thrown.
- * </p>
+ * <p>If the CSV file is empty or an error occurs during parsing, a
+ * {@link ProjectorServerException} is thrown.</p>
  * 
  * @see IProjectorParser
- * @author David Jason Gianmoena
- *         (<a href="https://github.com/JasonDGian">GitHub</a>)
- * @version 1.1
+ * 
+ * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
+ * @version 1.2
  */
 @Slf4j
 @Service
@@ -86,21 +61,25 @@ public class IProjectorParserImpl implements IProjectorParser
 	@Autowired
 	private IClassroomRepository classroomRepository;
 
-	/**
-	 * Parses the projectors from the provided {@link Scanner} input, which reads a
-	 * CSV file.
+    /**
+     * Parses projector records from the provided {@link Scanner} input, reading a CSV file.
+     * 
+     * <p>Ensures that all necessary entities exist in the database before creating new projectors.</p>
+     * 
+	 * <p>Processing Steps</p>
+	 * <ul>
+	 *     <li>Reads and skips the first line (header).</li>
+	 *     <li>Processes each line, extracting the projector model, classroom, and floor.</li>
+	 *     <li>Ensures the floor exists, creating it if necessary.</li>
+	 *     <li>Ensures the classroom exists, linking it to the correct floor.</li>
+	 *     <li>Ensures the projector model exists.</li>
+	 *     <li>Checks for an existing projector entry; creates and saves if absent.</li>
+	 * </ul>
 	 * 
-	 * <p>
-	 * The method processes each line, ensuring that the projector model exists and
-	 * creating a new projector record if necessary. If a projector already exists,
-	 * it is skipped.
-	 * </p>
-	 * 
-	 * @param scanner The {@link Scanner} instance that reads the CSV file.
-	 * @return A summary string indicating the number of records saved and skipped.
-	 * @throws ProjectorServerException If an error occurs during parsing or
-	 *                                  database operations.
-	 */
+     * @param scanner The {@link Scanner} instance reading the CSV file.
+     * @return A summary indicating records saved and skipped.
+     * @throws ProjectorServerException If an error occurs during parsing or database operations.
+     */
 	@Override
 	public String parseProjectors(Scanner scanner) throws ProjectorServerException
 	{
@@ -119,7 +98,7 @@ public class IProjectorParserImpl implements IProjectorParser
 		int recordsSkipped = 0;
 		int recordsSaved = 0;
 
-		// Ignore the first line of the CSV file (column headers)
+		// Skip the first line (assumed to be headers)
 		scanner.nextLine();
 
 		// Process each line in the CSV file
@@ -141,7 +120,7 @@ public class IProjectorParserImpl implements IProjectorParser
 			String classroomName = csvFields[1].trim();
 			String floorName = csvFields[2].trim();
 
-			// Check if the floor exists in the databace; if not, create and save it.
+			// Check if the floor exists in the database; if not, create and save it.
 			Optional<Floor> floorOptional = this.floorRepository.findById(floorName);
 
 			Floor floor = floorOptional.orElseGet(() ->
@@ -153,22 +132,21 @@ public class IProjectorParserImpl implements IProjectorParser
 			});
 			
 			
-			// Check if the classroom exists; if not, create and save it.
+			// Check if the classroom exists; if not, create and save it. 
 			Optional<Classroom> classroomOptional = this.classroomRepository.findById(classroomName);
 
 			Classroom classroom = classroomOptional.orElseGet(() ->
 			{
 				log.debug("Classroom '{}' not found in DB, saving it now.", classroomName);
 				Classroom newClassroom = new Classroom();
-				newClassroom.setFloor(floor);
+				newClassroom.setFloor(floor); // Link it to the floor
 				newClassroom.setClassroomName(classroomName);
 				return this.classroomRepository.save(newClassroom);
 			});
 			
 			
 
-			// Check if the projector model exists in the database; if not, create and save
-			// it
+			// Check if the model exists in the database; if not, create and save it.
 			Optional<ProjectorModel> modelOptional = this.projectorModelRepo.findById(modelName);
 
 			// Retrieve existing model or create a new one if it doesn't exist
@@ -180,12 +158,12 @@ public class IProjectorParserImpl implements IProjectorParser
 				return this.projectorModelRepo.save(newModel);
 			});
 
-			// Construct a unique Projector ID
+			// Create unique projector ID
 			ProjectorId projectorId = new ProjectorId();
 			projectorId.setClassroom(classroom);
 			projectorId.setModel(currentModel);
 
-			// Check if the projector unit already exists in the database
+			// Check if projector already exists...
 			Optional<Projector> projectorOptional = this.projectorRepository.findById(projectorId);
 
 			if (projectorOptional.isEmpty())
@@ -193,7 +171,7 @@ public class IProjectorParserImpl implements IProjectorParser
 				recordsSaved++;
 				log.debug("Projector Unit with ID '{}' not found in DB, saving it now.", projectorId.toString());
 
-				// Create and save a new projector entry
+				// if doesn't exists: create and save a new projector entry
 				Projector newProjector = new Projector();
 				newProjector.setClassroom(classroom);
 				newProjector.setModel(currentModel);
@@ -202,14 +180,15 @@ public class IProjectorParserImpl implements IProjectorParser
 				log.debug("Projector for model '{}' in classroom '{}' successfully parsed and saved.", modelName,
 						classroom);
 			} else
-			{
+			{	
+				// if exists: skip current record.
 				log.debug("Projector '{}' in classroom '{}' already exists in DB, skipping.", modelName, classroom);
 				recordsSkipped++;
 			}
 		}
 
 		message = "PROJECTORS: Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
-		// log.info(message);
+		log.info(message);
 		return message;
 	}
 }

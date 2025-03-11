@@ -18,29 +18,19 @@ import es.iesjandula.reaktor_projector_server.utils.Constants;
 import es.iesjandula.reaktor_projector_server.utils.ProjectorServerException;
 import lombok.extern.slf4j.Slf4j;
 
+
 /**
- * Implementation of {@link ICommandParser} responsible for parsing commands from a CSV file
- * and updating the database accordingly.
- * 
- * <p>This class reads a CSV file containing fields in the format:
- * <code>action_name, command, model_name</code>. It checks if the extracted 
- * action, command, and projector model exist in the database and saves them 
- * if they do not exist.</p>
- * 
- * <p>It interacts with the database via:
- * <ul>
- *     <li>{@link IActionRepository} - to manage action records.</li>
- *     <li>{@link ICommandRepository} - to store and retrieve commands.</li>
- *     <li>{@link IProjectorModelRepository} - to manage projector models.</li>
- * </ul>
- * </p>
- * 
- * <p>Logs are generated at each step for debugging and traceability.</p>
+ * Implementation of the {@link ICommandParser} interface for parsing command data
+ * from CSV files. This service is responsible for reading a CSV file containing
+ * action names, commands, and projector models, checking for existing records
+ * in the database, and saving new records.
  * 
  * @see ICommandParser
  * 
- * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
- * @version 1.0
+ * <p>
+ * Author: David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>) 
+ * Version: 1.1
+ * </p>
  */
 @Slf4j
 @Service
@@ -55,20 +45,23 @@ public class ICommandPaserImpl implements ICommandParser
     @Autowired
     private IProjectorModelRepository projectorModelRepo;
 
+
     /**
-     * Parses commands from the provided {@link Scanner} input, extracting and storing 
-     * actions, commands, and projector models in the database.
-     * 
-     * <p>For each line in the CSV file, this method:
+     * Parses commands from the given {@link Scanner} input and updates the database.
+     *
+     * <p>Processing steps:</p>
      * <ul>
-     *     <li>Extracts action, command, and model data.</li>
-     *     <li>Verifies if they exist in the database.</li>
-     *     <li>Saves new records if they are not found.</li>
+     *     <li>Checks if the file is empty.</li>
+     *     <li>Skips the first line (assumed to be the header).</li>
+     *     <li>Reads and trims each subsequent line to extract the action name, command, and model name.</li>
+     *     <li>Checks if they exist in the database.</li>
+     *     <li>Saves new records if missing.</li>
+     *     <li>Skips over malformed or already existing records</li>
      * </ul>
-     * </p>
-     * 
+     *
      * @param scanner The {@link Scanner} instance reading the CSV file.
-     * @throws ProjectorServerException If an error occurs during parsing or database operations.
+     * @return Summary of records saved and skipped.
+     * @throws ProjectorServerException If the file is empty or an error occurs.
      */
     @Override
     public String parseCommands(Scanner scanner) throws ProjectorServerException
@@ -81,7 +74,7 @@ public class ICommandPaserImpl implements ICommandParser
             log.error("The received file is empty. No commands to parse.");
             throw new ProjectorServerException(493, "Empty CSV file received in parseCommands() method.");
         }
-
+        String message;
         int recordsSkipped = 0;
         int recordsSaved = 0;
         
@@ -91,34 +84,35 @@ public class ICommandPaserImpl implements ICommandParser
         while (scanner.hasNextLine()) {
             log.debug("-----------------------------------------------------------------------");
             
-            // File fields should always be -> action_name, command, model_name
+            // Expected format: action_name, command, model_name
             String[] csvFields = scanner.nextLine().split(Constants.CSV_DELIMITER);
             
+            // Skips malformed lines.
             if (csvFields.length < 3) {
-                log.error("Skipping malformed or empty CSV line.");
+                log.warn("WARNING: Skipping malformed or empty CSV line.");
                 recordsSkipped++;
                 continue;
             }
             
-            String actionName = csvFields[0]; 
-            String command = csvFields[1];
-            String modelName = csvFields[2];
+            String actionName = csvFields[0].trim(); 
+            String command = csvFields[1].trim();
+            String modelName = csvFields[2].trim();
             
-            // Retrieve or create an action
+        	// Retrieve or create necessary action
             log.debug("Parsing action '{}'.", actionName);
             Action currentAction = getOrCreateAction(actionName);
                         
-            // Retrieve or create a projector model
+            // Retrieve or create necessary projector model
             log.debug("Parsing projector model '{}'.", modelName);
             ProjectorModel currentModel = getOrCreateModel(modelName);
 
-            // Create a unique command ID
+            // Generate a unique command ID
             CommandId currentCommandId = new CommandId();
             currentCommandId.setAction(currentAction);
             currentCommandId.setModelName(currentModel);
             currentCommandId.setCommand(command);
             
-            // Check if the command exists in the database; if not, save it.
+            // Check if the command already exists...
             log.debug("Parsing command '{}'.", command);
             Optional<Command> currentCommandOptional = commandRepo.findById(currentCommandId);
             
@@ -135,15 +129,17 @@ public class ICommandPaserImpl implements ICommandParser
                 recordsSkipped++;
             }
         }
-
-		return "COMMANDS: Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
+        
+        message = "COMMANDS: Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
+        log.info(message);
+		return message;
     }
     
     /**
      * Retrieves an existing {@link Action} from the database or creates a new one if not found.
-     * 
+     *
      * @param actionName The name of the action.
-     * @return The existing or newly created {@link Action}.
+     * @return The existing or newly created {@link Action} instance.
      */
     private Action getOrCreateAction(String actionName) {
         // Fetch the object from DB.
@@ -160,9 +156,9 @@ public class ICommandPaserImpl implements ICommandParser
     
     /**
      * Retrieves an existing {@link ProjectorModel} from the database or creates a new one if not found.
-     * 
+     *
      * @param modelName The name of the projector model.
-     * @return The existing or newly created {@link ProjectorModel}.
+     * @return The existing or newly created {@link ProjectorModel} instance.
      */
     private ProjectorModel getOrCreateModel(String modelName) {
         // Fetch the object from DB.

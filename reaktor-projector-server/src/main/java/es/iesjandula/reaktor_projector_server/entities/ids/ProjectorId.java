@@ -17,46 +17,36 @@ import lombok.NoArgsConstructor;
  * <p>
  * The composite key consists of:
  * <ul>
- * <li>{@code modelName} - The model name of the projector.</li>
+ * <li>{@code model} - The model of the projector.</li>
  * <li>{@code classroom} - The classroom where the projector is located.</li>
  * </ul>
  * </p>
  * 
  * <p>
- * Annotations:
+ * Author: David Jason Gianmoena
+ * (<a href="https://github.com/JasonDGian">GitHub</a>) Version: 1.0
  * </p>
- * <ul>
- * <li>{@link Data} - Generates boilerplate code like getters, setters, and
- * {@code toString()}.</li>
- * <li>{@link NoArgsConstructor} - Creates a no-argument constructor.</li>
- * <li>{@link AllArgsConstructor} - Creates a constructor with all fields as
- * parameters.</li>
- * <li>{@link Serializable} - Required for JPA composite keys.</li>
- * </ul>
- * 
- * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
- * @version 1.0
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectorId
 {
-	/** 
-	 * The model name of the projector. 
+	/**
+	 * The model of the projector.
 	 */
 	private ProjectorModel model;
 
-	/** 
-	 * The classroom where the projector is located. 
+	/**
+	 * The classroom where the projector is located.
 	 */
 	private Classroom classroom;
-	
+
 	@Override
-	public String toString() {
-	    return new StringBuilder()
-	        .append("ProjectorId - model: ").append(this.model == null ? "N/A" : this.model.getModelName())
-	        .append(" | classroom: ").append(this.classroom.getClassroomName() == null  ? "N/A" : this.classroom.getClassroomName())
-	        .toString();
+	public String toString()
+	{
+		return new StringBuilder().append("ProjectorId - model: ")
+				.append(this.model == null ? "N/A" : this.model.getModelName()).append(" | classroom: ")
+				.append(this.classroom == null ? "N/A" : this.classroom.getClassroomName()).toString();
 	}
 }

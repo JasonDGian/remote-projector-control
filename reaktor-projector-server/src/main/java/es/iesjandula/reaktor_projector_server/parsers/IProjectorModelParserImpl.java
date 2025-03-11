@@ -13,19 +13,16 @@ import es.iesjandula.reaktor_projector_server.utils.ProjectorServerException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Implementation of {@link IProjectorModelParser} that handles the parsing of projector models
- * from a CSV file and updates the database accordingly.
- * 
- * <p>This service parses each line in the CSV file, which should contain the projector model name, 
- * and checks if that model is already present in the database. If not, it creates and saves a new
- * {@link ProjectorModel} in the repository.</p>
- * 
- * <p>Logging is provided at each stage of the process for debugging and traceability.</p>
- * 
+ * Implementation of {@link IProjectorModelParser} responsible for parsing and storing projector models
+ * from a CSV file into the database.
+ *
+ * <p>This service processes CSV data, where each line should contain a single projector model name.
+ * If the model does not already exist in the database, it is added.</p>
+ *
  * @see IProjectorModelParser
- * 
+ *
  * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
- * @version 1.0
+ * @version 1.1
  */
 @Slf4j
 @Service
@@ -35,19 +32,27 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
     private IProjectorModelRepository projectorModelRepo;
 
     /**
-     * Parses the projector models from the provided {@link Scanner} input.
-     * Each line in the CSV should contain a projector model name only.
-     * The method checks if each model exists in the database and saves it if it does not exist.
-     * 
-     * @param scanner The {@link Scanner} instance that reads the CSV file.
-     * @throws ProjectorServerException If an error occurs during the parsing or database operation.
+     * Parses projector models from the given {@link Scanner} input and updates the database.
+     *
+     * <p>Processing steps:</p>
+     * <ul>
+     *     <li>Checks if the file is empty.</li>
+     *     <li>Skips the first line (assumed to be the header).</li>
+     *     <li>Reads and trims each subsequent line to extract the projector model name.</li>
+     *     <li>Checks if the model exists in the database.</li>
+     *     <li>If not, saves the new model; otherwise, it is skipped.</li>
+     * </ul>
+     *
+     * @param scanner The {@link Scanner} instance reading the CSV file.
+     * @return A summary message indicating the number of records saved and skipped.
+     * @throws ProjectorServerException If the input file is empty or an error occurs.
      */
     @Override
     public String parseProjectorModels(Scanner scanner) throws ProjectorServerException
     {
         log.debug("Projector Models parsing process initiated.");
        
-        // Check if the CSV file is empty
+        // Ensure the CSV file is not empty
         if (!scanner.hasNextLine())
         {
             log.error("The received file is empty. No projectors to parse.");
@@ -59,7 +64,7 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
         int recordsSkipped = 0;
         int recordsSaved = 0;
 
-        // Ignores the first line of the CSV file (column headers).
+        // Skip the first line (assumed to be headers)
         scanner.nextLine();
 
         // Loop through each line in the CSV file
@@ -67,7 +72,7 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
         {
             log.debug("-----------------------------------------------------------------------");
             
-            // Read the model name from the CSV line
+            // Read and trim the projector model name
             String modelName = scanner.nextLine().trim();
             
             if (modelName.isBlank()) {
@@ -79,7 +84,7 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
             // Check if the projector model already exists in the database
             Optional<ProjectorModel> modelOptional = projectorModelRepo.findById(modelName);
 
-            // If the model exists in the database, log and skip it
+            // If the model exists in the database, log and skip current record.
             if (modelOptional.isPresent())
             {
                 log.debug("Projector Model '{}' already present in DB, skipping to next record.", modelName);
@@ -87,7 +92,7 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
             }
             else
             {
-                // If the model doesn't exist, create and save a new one
+                // If the model doesn't exist, create and save a new record.
                 log.debug("Projector Model '{}' not present in DB, saving it now.", modelName);
                 ProjectorModel newModel = new ProjectorModel();
                 newModel.setModelName(modelName);
@@ -97,7 +102,7 @@ public class IProjectorModelParserImpl implements IProjectorModelParser
         }
         
         message = "MODELS: Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
-        //log.info(message);
+        log.info(message);
 		return message;
     }
 }

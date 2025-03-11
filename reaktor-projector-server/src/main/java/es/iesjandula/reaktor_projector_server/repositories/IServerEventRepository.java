@@ -13,63 +13,116 @@ import es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto;
 import es.iesjandula.reaktor_projector_server.entities.Projector;
 import es.iesjandula.reaktor_projector_server.entities.ServerEvent;
 
-public interface IServerEventRepository extends JpaRepository<ServerEvent, Long>
-{
+/**
+ * Repository interface for managing ServerEvent entities.
+ * Provides CRUD operations on ServerEvent entities and custom queries to retrieve event data.
+ * 
+ * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
+ * @version 1.1
+ */
+public interface IServerEventRepository extends JpaRepository<ServerEvent, Long> {
 
-	@Query("SELECT new es.iesjandula.reaktor_projector_server.dtos.SimplifiedServerEventDto( se.eventId, se.command.command, se.actionStatus ) "
-			+ "FROM ServerEvent se " + "WHERE se.projector = :projector " + "AND se.actionStatus = :actionStatus "
-			+ "ORDER BY se.dateTime DESC")
-	List<SimplifiedServerEventDto> findMostRecentCommandOpen(Projector projector, String actionStatus);
+    /**
+     * Retrieves a list of simplified server event details for a given projector and action status.
+     * The results are ordered by event date in descending order.
+     * 
+     * @param projector the projector whose events are to be retrieved
+     * @param actionStatus the status of the action (e.g., OPEN, CLOSED) to filter events
+     * @return a list of simplified server event details
+     */
+    @Query("SELECT new es.iesjandula.reaktor_projector_server.dtos.SimplifiedServerEventDto( se.eventId, se.command.command, se.actionStatus ) "
+            + "FROM ServerEvent se "
+            + "WHERE se.projector = :projector "
+            + "AND se.actionStatus = :actionStatus "
+            + "ORDER BY se.dateTime DESC")
+    List<SimplifiedServerEventDto> findRecentServerEventsByStatus(Projector projector, String actionStatus);
 
-	@Query("SELECT se FROM ServerEvent se WHERE se.projector = :projector AND se.actionStatus = :actionStatus ORDER BY se.dateTime DESC")
-	List<ServerEvent> findMostRecentServerEventsOpen(Projector projector, String actionStatus);
+    /**
+     * Retrieves a list of server events for a given projector and action status, ordered by date.
+     * 
+     * @param projector the projector whose events are to be retrieved
+     * @param actionStatus the status of the action (e.g., OPEN, CLOSED) to filter events
+     * @return a list of server events
+     */
+    @Query("SELECT se FROM ServerEvent se "
+            + "WHERE se.projector = :projector "
+            + "AND se.actionStatus = :actionStatus "
+            + "ORDER BY se.dateTime DESC")
+    List<ServerEvent> findRecentServerEventsByProjector(Projector projector, String actionStatus);
 
-	@Query("""
-			SELECT new es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto(
-			se.eventId,
-			c.action.actionName,
-			p.model.modelName,
-			p.classroom.classroomName,
-			p.classroom.floor.floorName,
-			se.user,
-			se.dateTime,
-			se.actionStatus
-			)
-			FROM ServerEvent se
-			JOIN se.command c
-			JOIN se.projector p
-			ORDER BY se.dateTime DESC
-			""")
-	List<TableServerEventDto> getTableServerEventDtoList();
+    /**
+     * Retrieves a list of table-formatted server event details.
+     * The results include projectors, actions, classrooms, floors, and other relevant data.
+     * 
+     * @return a list of table-formatted server event details
+     */
+    @Query("""
+            SELECT new es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto(
+            se.eventId,
+            c.action.actionName,
+            p.model.modelName,
+            p.classroom.classroomName,
+            p.classroom.floor.floorName,
+            se.user,
+            se.dateTime,
+            se.actionStatus
+            )
+            FROM ServerEvent se
+            JOIN se.command c
+            JOIN se.projector p
+            ORDER BY se.dateTime DESC
+            """)
+    List<TableServerEventDto> getAllServerEventDtos();
 
-	@Query("""
-			SELECT new es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto(
-			se.eventId,
-			c.action.actionName,
-			p.model.modelName,
-			p.classroom.classroomName,
-			p.classroom.floor.floorName,
-			se.user,
-			se.dateTime,
-			se.actionStatus
-			)
-			FROM ServerEvent se
-			JOIN se.command c
-			JOIN se.projector p
-			WHERE (:classroom = '' OR :classroom IS NULL OR p.classroom.classroomName = :classroom)
-			AND (:floor = '' OR :floor IS NULL OR p.classroom.floor.floorName = :floor)
-			AND (:model = '' OR :model IS NULL OR p.model.modelName = :model)
-			AND (:actionStatus = '' OR :actionStatus IS NULL OR se.actionStatus = :actionStatus)
-			ORDER BY se.dateTime DESC
-			""")
-	Page<TableServerEventDto> getTableServerEventDtoPage(Pageable pageable, @Param("classroom") String classroom,
-			@Param("floor") String floor, @Param("model") String model, @Param("actionStatus") String actionStatus);
+    /**
+     * Retrieves a paginated list of table-formatted server event details with optional filters.
+     * Filters can be applied for classroom, floor, model, and action status.
+     * 
+     * @param pageable pagination information
+     * @param classroom optional classroom name filter 		(can be null or empty)
+     * @param floor optional floor name filter				(can be null or empty)
+     * @param model optional projector model filter 		(can be null or empty)
+     * @param actionStatus optional action status filter 	(can be null or empty)
+     * 
+     * @return a paginated list of table-formatted server event details
+     */
+    @Query("""
+            SELECT new es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto(
+            se.eventId,
+            c.action.actionName,
+            p.model.modelName,
+            p.classroom.classroomName,
+            p.classroom.floor.floorName,
+            se.user,
+            se.dateTime,
+            se.actionStatus
+            )
+            FROM ServerEvent se
+            JOIN se.command c
+            JOIN se.projector p
+            WHERE (:classroom = '' OR :classroom IS NULL OR p.classroom.classroomName = :classroom)
+            AND (:floor = '' OR :floor IS NULL OR p.classroom.floor.floorName = :floor)
+            AND (:model = '' OR :model IS NULL OR p.model.modelName = :model)
+            AND (:actionStatus = '' OR :actionStatus IS NULL OR se.actionStatus = :actionStatus)
+            ORDER BY se.dateTime DESC
+            """)
+    Page<TableServerEventDto> getFilteredServerEventDtosPage(Pageable pageable, 
+        @Param("classroom") String classroom,
+        @Param("floor") String floor,
+        @Param("model") String model,
+        @Param("actionStatus") String actionStatus);
 
-	@Query("""
-			SELECT COUNT(*)
-			FROM ServerEvent se
-			WHERE (se.actionStatus = :actionStatus)
-			""")
-	Long getNumberOfEventsCountByStatus(@Param("actionStatus") String actionStatus);
+    /**
+     * Retrieves the count of server events for a specific action status.
+     * 
+     * @param actionStatus the action status to filter the events
+     * @return the count of events matching the action status
+     */
+    @Query("""
+            SELECT COUNT(*)
+            FROM ServerEvent se
+            WHERE se.actionStatus = :actionStatus
+            """)
+    Long countServerEventsByStatus(@Param("actionStatus") String actionStatus);
 
 }
