@@ -25,20 +25,21 @@ public class RichResponseDto
 	/**
 	 * The status of the operation (e.g., INFO, ERROR, SUCCESS).
 	 */
-	private String status;
+	private String status1;
 
 	/**
 	 * The first message for the result of the operation.
 	 */
 	private String message1;
+	
+	/**
+	 * The status of the operation (e.g., INFO, ERROR, SUCCESS).
+	 */
+	private String status2;
 
 	/**
 	 * The second message for the result of the operation.
 	 */
 	private String message2;
 
-	/**
-	 * The third message for the result of the operation.
-	 */
-	private String message3;
 }

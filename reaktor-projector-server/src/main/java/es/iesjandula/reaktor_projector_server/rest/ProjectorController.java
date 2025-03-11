@@ -555,7 +555,6 @@ public class ProjectorController
 	@Transactional
 	@PostMapping("/parse-multifile")
 	public ResponseEntity<?> parseMultifile(
-			@RequestParam(value = "classrooms.csv", required = false) MultipartFile classroomsFile,
 			@RequestParam(value = "projectors.csv", required = false) MultipartFile projectorsFile,
 			@RequestParam(value = "commands.csv", required = false) MultipartFile commandsFile)
 	{
@@ -569,36 +568,15 @@ public class ProjectorController
 			RichResponseDto richResponseDto = new RichResponseDto();
 
 			// Check if no files were received, and return an error message.
-			if ((classroomsFile == null || classroomsFile.isEmpty()) && (commandsFile == null || commandsFile.isEmpty())
-					&& (projectorsFile == null || projectorsFile.isEmpty()))
+			if (
+					(commandsFile == null || commandsFile.isEmpty()) 
+					&& 
+					(projectorsFile == null || projectorsFile.isEmpty())
+				)
 			{
 				message = "No files received for parse operation.";
 				log.error(message);
 				throw new ProjectorServerException(498, message); // Custom error for no files received.
-			}
-
-			// ----------------------------- IMPORTANT -----------------------------
-			// IF YOU ARE MODIFYING THIS, KEEP IN MIND THE PARSING ORDER MATTERS TO
-			// KEEP A CONSISTENT RESULT MESSAGE.
-			// BEST ORDER IS: CLASSROOMS > PROJECTORS > COMMANDS.
-			// --------------------------------------------------------------------
-
-			// TODO: This can be modularized to reduce code. Create a new helper function to
-			// process files.
-
-			// Process classrooms file if provided.
-			if (classroomsFile != null && !classroomsFile.isEmpty())
-			{
-				log.info("Processing 'classrooms.csv' file.");
-				try (Scanner scanner = new Scanner(classroomsFile.getInputStream()))
-				{
-					this.validateFile(classroomsFile); // Validate the file before processing.
-					richResponseDto.setMessage3(this.classroomParser.parseClassroom(scanner)); // Parse classrooms.
-				}
-			} else
-			{
-				log.info("No 'classrooms.csv' file received.");
-				richResponseDto.setMessage3("The request did not include a file for classrooms.");
 			}
 
 			// Process projectors file if provided.
@@ -609,11 +587,17 @@ public class ProjectorController
 				{
 					this.validateFile(projectorsFile); // Validate the file before processing.
 					richResponseDto.setMessage2(projectorParser.parseProjectors(scanner)); // Parse projectors.
+					richResponseDto.setStatus2(Constants.RESPONSE_STATUS_SUCCESS);
+				}
+				catch ( ProjectorServerException e ){
+					richResponseDto.setMessage2(e.getMessage()); // Parse commands.
+					richResponseDto.setStatus2(Constants.RESPONSE_STATUS_ERROR);
 				}
 			} else
 			{
 				log.info("No 'projectors.csv' file received.");
 				richResponseDto.setMessage2("The request did not include a file for projectors.");
+				richResponseDto.setStatus2(Constants.RESPONSE_STATUS_WARNING);
 			}
 
 			// Process commands file if provided.
@@ -624,19 +608,22 @@ public class ProjectorController
 				{
 					this.validateFile(commandsFile); // Validate the file before processing.
 					richResponseDto.setMessage1(this.commandsParser.parseCommands(scanner)); // Parse commands.
+					richResponseDto.setStatus1(Constants.RESPONSE_STATUS_SUCCESS);
+				}
+				catch ( ProjectorServerException e ){
+					richResponseDto.setMessage1(e.getMessage()); // Parse commands.
+					richResponseDto.setStatus1(Constants.RESPONSE_STATUS_ERROR);
 				}
 			} else
 			{
 				log.info("No 'commands.csv' file received.");
 				richResponseDto.setMessage1("The request did not include a file for commands.");
+				richResponseDto.setStatus1(Constants.RESPONSE_STATUS_WARNING);
 			}
 
-			// Set response status to success.
-			richResponseDto.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
-
 			// Log the final parsing results.
-			log.info("Commands: {}\nProjectors: {}\nClassrooms: {}", richResponseDto.getMessage1(),
-					richResponseDto.getMessage2(), richResponseDto.getMessage3());
+			log.info("Commands: {}\nProjectors: {}", richResponseDto.getMessage1(),
+					richResponseDto.getMessage2());
 
 			// Return the structured response DTO with success status.
 			return ResponseEntity.ok(richResponseDto);
@@ -1810,4 +1797,11 @@ public class ProjectorController
 
 	}
 
+	@GetMapping("/event-states")
+	public ResponseEntity<?> getEventStatusList(){
+		
+		String[] possibleEventsList = Constants.POSSIBLE_EVENT_STATUS;
+		
+		return ResponseEntity.ok().body(possibleEventsList);
+	}
 }

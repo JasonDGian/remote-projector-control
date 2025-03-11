@@ -332,38 +332,53 @@ Notas:
 
 **TIEMPO DEDICADO: 7 horas**
 
-# **NOTAS**
-- Actualmente el sistema no permite dar de alta mas de un mismo modelo en el mismo aula, el ID de un proyector fisico es su (aula + modelo). Si deseamos permitir el uso de mas de un mismo modelo en un aula debemos modificar este comportamiento.
-- Revisar errores devueltos por el servidor para reutilizar mas codigos de manera mas generica pero mas categorizada.
-- Revisar los mensajes de debug y los niveles aplicados. Recordar aplicar INFO, WARN, ERROR, DEBUG en backend.
-- Redactar los mensajes de ayuda en formulario gestion datos.
-- Redactar subtitulos de formularios gestion datos.
-- Arreglar presentacion y proporciones formulario desasignar proyector.
-- Insertar descripcion en entidad acciones y modificar parseador en consecuencia.
-- Los parseadores no controlan que el nombre de los CSV sea correcto o que estos tengan la estructura esperada. Se podria hacer que lo controlen y respondan acorde.
+# Dia 27 - 12/03/25    
+- Limpieza en script ESP32.
+- Reordenacion de las operaciones en base a nuevas exigencias.
+- Añadido bloque de codigo para el fichero de configuracion wifi externo.
+- Parametrizado de funciones de comparacion y copia.
+- Modularizacion del codigo para una mejor legibilidad, mantenimiento.
+- Mediante funciones, reutilizacion de codigo para gestion de ficheros de certificado y configuracion.
+- Mejora de mensajes de DEBUG.
+- Mejora de gestion de memoria en solicitud a servidor.
 
-GENERAL
-- Introducir manera de ver solo proyectores encendidos.
+**TIEMPO DEDICADO: 7.5 horas**
 
-FORMULARIOS
-- Introducir alerta confirmación borrado proyectores.
-- Introducir alerta confirmacion borrado modelo.
-- Introducir textos de ayuda en formularios
-- Introducir subtitulos en formularios.
-- Arreglar presentación formulario desasignar proyector.
-- Revisar paleta de colores.
-- Revisar mecanismo de alertas.
+# Dia 28 - 14/03/25    
+- Refactor de las entidades existentes para reflejar las nuevas indicaciones.
+- Adaptación del controlador para su correcto funcionamiento con el refactor actual.
+- Adaptación de los parseadores para su correcto funcionamiento con el refactor actual.
+- Adaptación de las queries de los distintos repositorios y todas las referencias a las entidades eliminadas y a los nuevos atributos.
+- Cambios en pantalla "Eventos servidor" para reflejar las nuevas indicaciones.
+    - Eliminados iconos de estado.
+    - Insertado desplegable para filtro de estados.
+    - Eliminados campos innecesarios de la tabla y reordenados.
 
-CONTROL REMOTO
-- Queda por aclarar el funcionamiento del a asignación de proyectores por aula.
-- Cambiar diseño para respetar la idea de envio de ordenes por lotes.
-- Añadir toggle-switch para la seleccion de proyectores.
-- Cambiar las ordenes especificas por las acciones posibles. 
+- Fusión de vista resumen y carga de datos en nueva vista Administrar.
+    - El refactor actual elimina las entidades Classroom y Floor y las absorbe en su lugar la entidad Projector.
+Además, desconecta Projector de la entidad ProjectorModel, ya que esta también será refactorizada en el futuro.
 
-[REVISAR]
-CREAR PAGINA DE MONITOREO GENERAL Y ORDENES MASIVAS.
-- Pantalla para el apagado de proyectores en masa.
-    -> Tabla que muestra modelo ubicación etc etc... pero también el estado del proyector.
+BACK
+- Agrega nuevo endpoint para servir posibles estados.
+- Modificado método de parseo de ficheros múltiples para dejar de lado el fichero de clases, creada gestión de respuesta de ficheros por separado respecto al estado.
+- Mejorado el DTO de RichResponseDto para poder administrar estados de respuestas de manera independiente.
+- Readapta todos los endpoints relacionados a Classroom y Floor para que sirvanl os mismos Dtos esperados por el front a partir del repositorio de Proyectores.
 
+FRONT END
+- Rediseña página "Eventos servidor".
+        - Elimina iconos de estado bajo petición del cliente, introduce un desplegable en su lugar.
+        - Elimina campos innecesarios y los reordena en la tabla de registro de eventos.
+- Rediseño de página de panel de control.
+        - Cambiado nombre a 'Administrar'.
+        - Añadido formulario de carga de datos.
+        - Cambiada la gestión de la respuesta de los formularios de carga para representar mejor el resultado de las operaciones por separado.
+        - Borra componente innecesario FloorModelFilter → Pasado a componente padre.
+Rediseña vista registro eventos para incorporar componentes y poder eliminar clases.
+- Añade modal de información al usuario de la orden enviada.
+- Añade función de deshabilitado de botón tras pulsar en acción.
+- Muestra al usuario cuánto queda para la próxima acción.
+- Refactorización de componentes y vistas de la parte front end.
+    - Refactorizados distintos componentes que debido al nuevo diseño ven un menor uso y pueden ser implementados directamente en la vista.
+    - Eliminados hasta ahora 5 componentes refactorizados dejando un total de 9 componentes.     
 
-En el endpoint de solicitud de ordenes, crear un mecanismo que ponga "online" el microcontrolador que ha realizado la solicitud.  Esto usará un servicio de KeepAlive.
+**TIEMPO DEDICADO: 11 horas**

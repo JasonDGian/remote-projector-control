@@ -75,6 +75,7 @@ public class ICommandPaserImpl implements ICommandParser
             throw new ProjectorServerException(493, "Empty CSV file received in parseCommands() method.");
         }
         String message;
+        int recordLine = 0;
         int recordsSkipped = 0;
         int recordsSaved = 0;
         
@@ -84,19 +85,30 @@ public class ICommandPaserImpl implements ICommandParser
         while (scanner.hasNextLine()) {
             log.debug("-----------------------------------------------------------------------");
             
+            recordLine++;
+            
             // Expected format: action_name, command, model_name
             String[] csvFields = scanner.nextLine().split(Constants.CSV_DELIMITER);
             
-            // Skips malformed lines.
-            if (csvFields.length < 3) {
-                log.warn("WARNING: Skipping malformed or empty CSV line.");
-                recordsSkipped++;
-                continue;
-            }
+			if ( csvFields.length != 3 )
+			{
+				message = "ERROR: Missing value detected in the Commands CSV file in line " + recordLine + ".";
+				log.error(message);
+				throw new ProjectorServerException(499, message);
+			}
             
+            // Skips malformed lines.
             String actionName = csvFields[0].trim(); 
             String command = csvFields[1].trim();
             String modelName = csvFields[2].trim();
+            
+			// If the current line is not exactly 3 fields long, throw exception.
+			if ( actionName.isBlank() || command.isBlank() || modelName.isBlank())
+			{
+				message = "ERROR: Blank or empty value detected in the Commands CSV file in line " + recordLine + ".";
+				log.error(message);
+				throw new ProjectorServerException(499, message);
+			}
             
         	// Retrieve or create necessary action
             log.debug("Parsing action '{}'.", actionName);
@@ -134,7 +146,7 @@ public class ICommandPaserImpl implements ICommandParser
         log.info(message);
 		return message;
     }
-    
+        
     /**
      * Retrieves an existing {@link Action} from the database or creates a new one if not found.
      *

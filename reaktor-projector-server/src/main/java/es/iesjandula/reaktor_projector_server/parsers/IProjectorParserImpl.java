@@ -1,5 +1,7 @@
 package es.iesjandula.reaktor_projector_server.parsers;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -18,6 +20,7 @@ import es.iesjandula.reaktor_projector_server.repositories.IProjectorModelReposi
 import es.iesjandula.reaktor_projector_server.repositories.IProjectorRepository;
 import es.iesjandula.reaktor_projector_server.utils.Constants;
 import es.iesjandula.reaktor_projector_server.utils.ProjectorServerException;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -81,6 +84,7 @@ public class IProjectorParserImpl implements IProjectorParser
      * @throws ProjectorServerException If an error occurs during parsing or database operations.
      */
 	@Override
+	@Transactional
 	public String parseProjectors(Scanner scanner) throws ProjectorServerException
 	{
 
@@ -94,9 +98,9 @@ public class IProjectorParserImpl implements IProjectorParser
 		}
 
 		String message;
-
 		int recordsSkipped = 0;
 		int recordsSaved = 0;
+		int recordLine = 0;
 
 		// Skip the first line (assumed to be headers)
 		scanner.nextLine();
@@ -105,20 +109,23 @@ public class IProjectorParserImpl implements IProjectorParser
 		while (scanner.hasNextLine())
 		{
 			log.debug("-----------------------------------------------------------------------");
+			
+			recordLine++;
 
 			// Read and split the CSV line
 			String[] csvFields = scanner.nextLine().split(Constants.CSV_DELIMITER);
-
-			if (csvFields.length < 3)
-			{
-				log.error("Skipping malformed or empty CSV line.");
-				recordsSkipped++;
-				continue;
-			}
-
+			
 			String modelName = csvFields[0].trim();
 			String classroomName = csvFields[1].trim();
 			String floorName = csvFields[2].trim();
+						
+			// If the current line is not exactly 3 fields long, throw exception.
+			if ( modelName.isBlank() || classroomName.isBlank() || floorName.isBlank())
+			{
+				message = "ERROR: Blank or empty value detected in the Projectors CSV file in line " + recordLine + ".";
+				log.error(message);
+				throw new ProjectorServerException(499, message);
+			}
 
 			// Check if the floor exists in the database; if not, create and save it.
 			Optional<Floor> floorOptional = this.floorRepository.findById(floorName);
@@ -177,7 +184,7 @@ public class IProjectorParserImpl implements IProjectorParser
 				newProjector.setModel(currentModel);
 
 				this.projectorRepository.saveAndFlush(newProjector);
-				log.debug("Projector for model '{}' in classroom '{}' successfully parsed and saved.", modelName,
+				log.debug("Projector for model '{}' in classroom '{}' successfully added to save list.", modelName,
 						classroom);
 			} else
 			{	
