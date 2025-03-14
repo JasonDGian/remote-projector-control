@@ -1,16 +1,18 @@
 package es.iesjandula.reaktor_projector_server.repositories;
 
 import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import es.iesjandula.reaktor_projector_server.dtos.ClassroomDto;
+import es.iesjandula.reaktor_projector_server.dtos.FloorDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorInfoDto;
 import es.iesjandula.reaktor_projector_server.entities.Projector;
-import es.iesjandula.reaktor_projector_server.entities.ids.ProjectorId;
 
 /**
  * Repository interface for managing Projector entities.
@@ -20,7 +22,7 @@ import es.iesjandula.reaktor_projector_server.entities.ids.ProjectorId;
  * @author David Jason Gianmoena (<a href="https://github.com/JasonDGian">GitHub</a>)
  * @version 1.0
  */
-public interface IProjectorRepository extends JpaRepository<Projector, ProjectorId> {
+public interface IProjectorRepository extends JpaRepository<Projector, String> {
 
     /**
      * Retrieves a paginated list of ProjectorInfoDto objects, ordered by model name, floor name, and classroom name.
@@ -34,15 +36,15 @@ public interface IProjectorRepository extends JpaRepository<Projector, Projector
      */
     @Query("""
             SELECT new es.iesjandula.reaktor_projector_server.dtos.ProjectorInfoDto( 
-                pro.model.modelName, 
-                pro.classroom.classroomName, 
-                pro.classroom.floor.floorName
+                pro.model, 
+                pro.classroom, 
+                pro.floor
             ) 
             FROM Projector pro 
-            WHERE ( :classroom IS NULL OR pro.classroom.classroomName = :classroom ) 
-            AND ( :floor IS NULL OR pro.classroom.floor.floorName = :floor ) 
-            AND ( :model IS NULL OR pro.model.modelName = :model ) 
-            ORDER BY pro.model.modelName, pro.classroom.floor.floorName, pro.classroom.classroomName 
+            WHERE ( :classroom IS NULL OR pro.classroom = :classroom ) 
+            AND ( :floor IS NULL OR pro.floor = :floor ) 
+            AND ( :model IS NULL OR pro.model = :model ) 
+            ORDER BY pro.model, pro.floor, pro.classroom 
         """)
     public Page<ProjectorInfoDto> findProjectorsOrderedByModel(Pageable pageable, String classroom, String floor, String model);
 
@@ -58,15 +60,15 @@ public interface IProjectorRepository extends JpaRepository<Projector, Projector
      */
     @Query("""
             SELECT new es.iesjandula.reaktor_projector_server.dtos.ProjectorInfoDto( 
-                pro.model.modelName, 
-                pro.classroom.classroomName, 
-                pro.classroom.floor.floorName
+                pro.model, 
+                pro.classroom,
+                pro.floor
             ) 
             FROM Projector pro 
-            WHERE ( :classroom IS NULL OR pro.classroom.classroomName = :classroom ) 
-            AND ( :floor IS NULL OR pro.classroom.floor.floorName = :floor ) 
-            AND ( :model IS NULL OR pro.model.modelName = :model )
-            ORDER BY pro.classroom.floor.floorName, pro.classroom.classroomName 
+            WHERE ( :classroom IS NULL OR pro.classroom = :classroom ) 
+            AND ( :floor IS NULL OR pro.floor = :floor ) 
+            AND ( :model IS NULL OR pro.model = :model )
+            ORDER BY pro.floor, pro.classroom 
         """)
     public Page<ProjectorInfoDto> findProjectorsOrderedByFloorAndClassroom(Pageable pageable, String classroom, String floor, String model);
 
@@ -79,11 +81,11 @@ public interface IProjectorRepository extends JpaRepository<Projector, Projector
      */
     @Query("""
             SELECT new es.iesjandula.reaktor_projector_server.dtos.ProjectorDto( 
-                pro.model.modelName, 
-                pro.classroom.classroomName
+                pro.model, 
+                pro.classroom
             ) 
             FROM Projector pro 
-            WHERE LOWER(pro.classroom.classroomName) = LOWER(:classroom)
+            WHERE LOWER(pro.classroom) = LOWER(:classroom)
         """)
     public List<ProjectorDto> findProjectorsByClassroom(@Param("classroom") String classroom);
 
@@ -97,7 +99,7 @@ public interface IProjectorRepository extends JpaRepository<Projector, Projector
     @Query("""
             SELECT COUNT(*) 
             FROM Projector pro 
-            WHERE LOWER(pro.model.modelName) = LOWER(:modelname) 
+            WHERE LOWER(pro.model) = LOWER(:modelname) 
         """)
     public long countProjectorsByModel(@Param("modelname") String modelname);
 
@@ -111,8 +113,34 @@ public interface IProjectorRepository extends JpaRepository<Projector, Projector
     @Query("""
             SELECT COUNT(*) 
             FROM Projector pro 
-            WHERE LOWER(pro.classroom.floor.floorName) = LOWER(:floorname) 
+            WHERE LOWER(pro.floor) = LOWER(:floorname) 
         """)
     public long countProjectorsOnFloor(@Param("floorname") String floorname);
 
+    
+    @Query("""
+            SELECT DISTINCT new es.iesjandula.reaktor_projector_server.dtos.FloorDto(pro.floor)
+            FROM Projector pro
+        """)
+    public List<FloorDto> findAllFloorAsDtos();
+    
+    @Query("""
+            SELECT DISTINCT new es.iesjandula.reaktor_projector_server.dtos.ClassroomDto(pro.classroom, pro.floor)
+            FROM Projector pro
+            WHERE LOWER(pro.floor) = LOWER(:floorName)
+        """)
+    List<ClassroomDto> findClassroomsByFloorNameAsDto(@Param("floorName") String floorName);
+
+    @Query("""
+    	    SELECT COUNT(DISTINCT pro.classroom) FROM Projector pro
+    	    """)
+    	public long countClassrooms();
+    
+    @Query("""
+    	    SELECT COUNT(DISTINCT pro.floor) FROM Projector pro
+    	    """)
+    	public long countFloors();
+
+
+    
 }

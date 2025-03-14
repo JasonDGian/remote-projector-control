@@ -38,8 +38,8 @@ public class ProjectorModel
 	/**
 	 * The list of projectors associated with this projector model.
 	 */
-	@OneToMany(mappedBy = "model")
-	private List<Projector> associatedProjectors;
+//	@OneToMany(mappedBy = "model")
+//	private List<Projector> associatedProjectors;
 
 	/**
 	 * The list of commands associated with this projector model.

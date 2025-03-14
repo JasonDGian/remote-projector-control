@@ -51,30 +51,6 @@ public interface IServerEventRepository extends JpaRepository<ServerEvent, Long>
     List<ServerEvent> findRecentServerEventsByProjector(Projector projector, String actionStatus);
 
     /**
-     * Retrieves a list of table-formatted server event details.
-     * The results include projectors, actions, classrooms, floors, and other relevant data.
-     * 
-     * @return a list of table-formatted server event details
-     */
-    @Query("""
-            SELECT new es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto(
-            se.eventId,
-            c.action.actionName,
-            p.model.modelName,
-            p.classroom.classroomName,
-            p.classroom.floor.floorName,
-            se.user,
-            se.dateTime,
-            se.actionStatus
-            )
-            FROM ServerEvent se
-            JOIN se.command c
-            JOIN se.projector p
-            ORDER BY se.dateTime DESC
-            """)
-    List<TableServerEventDto> getAllServerEventDtos();
-
-    /**
      * Retrieves a paginated list of table-formatted server event details with optional filters.
      * Filters can be applied for classroom, floor, model, and action status.
      * 
@@ -90,9 +66,9 @@ public interface IServerEventRepository extends JpaRepository<ServerEvent, Long>
             SELECT new es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto(
             se.eventId,
             c.action.actionName,
-            p.model.modelName,
-            p.classroom.classroomName,
-            p.classroom.floor.floorName,
+            p.model,
+            p.classroom,
+            p.floor,
             se.user,
             se.dateTime,
             se.actionStatus
@@ -100,9 +76,9 @@ public interface IServerEventRepository extends JpaRepository<ServerEvent, Long>
             FROM ServerEvent se
             JOIN se.command c
             JOIN se.projector p
-            WHERE (:classroom = '' OR :classroom IS NULL OR p.classroom.classroomName = :classroom)
-            AND (:floor = '' OR :floor IS NULL OR p.classroom.floor.floorName = :floor)
-            AND (:model = '' OR :model IS NULL OR p.model.modelName = :model)
+            WHERE (:classroom = '' OR :classroom IS NULL OR p.classroom = :classroom)
+            AND (:floor = '' OR :floor IS NULL OR p.floor = :floor)
+            AND (:model = '' OR :model IS NULL OR p.model = :model)
             AND (:actionStatus = '' OR :actionStatus IS NULL OR se.actionStatus = :actionStatus)
             ORDER BY se.dateTime DESC
             """)

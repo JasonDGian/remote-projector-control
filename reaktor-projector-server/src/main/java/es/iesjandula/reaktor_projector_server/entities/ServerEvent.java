@@ -65,11 +65,8 @@ public class ServerEvent
 	 * references multiple columns from the "Projector" table.
 	 * </p>
 	 */
-	@ManyToOne
-	@JoinColumns(
-	{ @JoinColumn(name = "projectorModel", referencedColumnName = "modelName", nullable = true),
-			@JoinColumn(name = "projectorClassroom", referencedColumnName = "classroom", nullable = true) })
-	private Projector projector;
+    @ManyToOne
+    private Projector projector;  
 
 	/**
 	 * The username of the person who triggered this event.
@@ -97,14 +94,14 @@ public class ServerEvent
 	private String actionStatus;
 
 	// Special to string method to prevent recursive calls and null pointers.
-	@Override
-	public String toString()
-	{
-		return new StringBuilder().append("ServerEvent - eventId: ").append(this.eventId).append(" | command:")
-				.append(this.command == null ? "N/A" : this.command.toString()).append(" | projector: ")
-				.append(this.projector == null ? "N/A" : this.projector.toString()).append(" | user: ")
-				.append(this.user.isBlank() ? "N/A" : this.user).append(" | dateTime: ")
-				.append(this.dateTime == null ? "N/A" : this.dateTime.toString()).append(" | actionStatus: ")
-				.append(this.actionStatus.isBlank() ? "N/A" : this.actionStatus).toString();
-	}
+//	@Override
+//	public String toString()
+//	{
+//		return new StringBuilder().append("ServerEvent - eventId: ").append(this.eventId).append(" | command:")
+//				.append(this.command == null ? "N/A" : this.command.toString()).append(" | projector: ")
+//				.append(this.projector == null ? "N/A" : this.projector.toString()).append(" | user: ")
+//				.append(this.user.isBlank() ? "N/A" : this.user).append(" | dateTime: ")
+//				.append(this.dateTime == null ? "N/A" : this.dateTime.toString()).append(" | actionStatus: ")
+//				.append(this.actionStatus.isBlank() ? "N/A" : this.actionStatus).toString();
+//	}
 }

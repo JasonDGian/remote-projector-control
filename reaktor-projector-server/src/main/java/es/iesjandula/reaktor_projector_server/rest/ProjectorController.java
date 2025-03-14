@@ -32,7 +32,6 @@ import es.iesjandula.reaktor_projector_server.dtos.CommandDto;
 import es.iesjandula.reaktor_projector_server.dtos.EventFilterObject;
 import es.iesjandula.reaktor_projector_server.dtos.FloorDto;
 import es.iesjandula.reaktor_projector_server.dtos.GeneralCountOverviewDto;
-import es.iesjandula.reaktor_projector_server.dtos.ModelOverviewDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorInfoDto;
 import es.iesjandula.reaktor_projector_server.dtos.ProjectorModelDto;
@@ -43,25 +42,19 @@ import es.iesjandula.reaktor_projector_server.dtos.ServerEventOverviewDto;
 import es.iesjandula.reaktor_projector_server.dtos.SimplifiedServerEventDto;
 import es.iesjandula.reaktor_projector_server.dtos.TableServerEventDto;
 import es.iesjandula.reaktor_projector_server.entities.Action;
-import es.iesjandula.reaktor_projector_server.entities.Classroom;
 import es.iesjandula.reaktor_projector_server.entities.Command;
 import es.iesjandula.reaktor_projector_server.entities.Projector;
 import es.iesjandula.reaktor_projector_server.entities.ProjectorModel;
 import es.iesjandula.reaktor_projector_server.entities.ServerEvent;
 import es.iesjandula.reaktor_projector_server.entities.ids.CommandId;
-import es.iesjandula.reaktor_projector_server.entities.ids.ProjectorId;
-import es.iesjandula.reaktor_projector_server.parsers.interfaces.IClassroomParser;
 import es.iesjandula.reaktor_projector_server.parsers.interfaces.ICommandParser;
 import es.iesjandula.reaktor_projector_server.parsers.interfaces.IProjectorModelParser;
 import es.iesjandula.reaktor_projector_server.parsers.interfaces.IProjectorParser;
 import es.iesjandula.reaktor_projector_server.repositories.IActionRepository;
-import es.iesjandula.reaktor_projector_server.repositories.IClassroomRepository;
 import es.iesjandula.reaktor_projector_server.repositories.ICommandRepository;
-import es.iesjandula.reaktor_projector_server.repositories.IFloorRepository;
 import es.iesjandula.reaktor_projector_server.repositories.IProjectorModelRepository;
 import es.iesjandula.reaktor_projector_server.repositories.IProjectorRepository;
 import es.iesjandula.reaktor_projector_server.repositories.IServerEventRepository;
-import es.iesjandula.reaktor_projector_server.services.ProjectorRemovalHandler;
 import es.iesjandula.reaktor_projector_server.utils.Constants;
 import es.iesjandula.reaktor_projector_server.utils.ProjectorServerException;
 import lombok.extern.slf4j.Slf4j;
@@ -71,9 +64,6 @@ import lombok.extern.slf4j.Slf4j;
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ProjectorController
 {
-
-	@Autowired
-	IClassroomParser classroomParser;
 
 	@Autowired
 	ICommandParser commandsParser;
@@ -99,14 +89,6 @@ public class ProjectorController
 	@Autowired
 	IActionRepository actionRepositories;
 
-	@Autowired
-	IClassroomRepository classroomRepository;
-
-	@Autowired
-	IFloorRepository floorRepository;
-
-	@Autowired
-	ProjectorRemovalHandler projectorRemovalHandler;
 
 	// ----------------------------- UTILITY METHODS -------------------------------
 
@@ -193,26 +175,9 @@ public class ProjectorController
 
 		log.debug("PROJECTOR MODEL RETRIEVED: {}", projectorModelEntity);
 
-		// Retrieve the classroom entity from the database.
-		Optional<Classroom> classroomOpt = this.classroomRepository.findById(projectorClassroom);
-
-		// If the classroom exists, store in entity, otherwise throw an exception.
-		Classroom classroomEntity = classroomOpt.orElseThrow(() ->
-		{
-			String exceptionMessage = "The classroom '" + projectorClassroom + "' does not exist.";
-			log.error(exceptionMessage);
-			return new ProjectorServerException(494, exceptionMessage);
-		});
-
-		log.debug("CLASSROOM RETRIEVED: {}", classroomEntity);
-
-		// Create composite projector ID to query the projector entity.
-		ProjectorId projectorId = new ProjectorId();
-		projectorId.setClassroom(classroomEntity);
-		projectorId.setModel(projectorModelEntity);
-
 		// Retrieve the projector entity using the composite key.
-		Optional<Projector> projectorOpt = this.projectorRepository.findById(projectorId);
+		Optional<Projector> projectorOpt = this.projectorRepository.findById(projectorClassroom);
+		
 		Projector projectorEntity = projectorOpt.orElseThrow(() ->
 		{
 			String exceptionMessage = "The projector model '" + projectorModelName + "' in classroom '"
@@ -285,66 +250,7 @@ public class ProjectorController
 	// --------------------------- END UTILITY METHODS -----------------------------
 
 	// ----------------------------- PARSING METHODS -------------------------------
-
-	/**
-	 * Endpoint to parse classrooms from a CSV file.
-	 * <p>
-	 * This method receives a CSV file containing classroom data, validates it, and
-	 * parses the content. It returns a response indicating success or failure.
-	 * </p>
-	 *
-	 * @param classroomsFile The uploaded CSV file containing classroom data.
-	 * @return A {@link ResponseEntity} containing a success or error message.
-	 */
-	@Transactional
-	@PostMapping(value = "/parse-classrooms")
-	public ResponseEntity<?> parseClassrooms(@RequestParam(value = "classrooms.csv") MultipartFile classroomsFile)
-	{
-		// Log the incoming request along with the file name for traceability.
-		log.info("Received POST request to '/parse-classrooms'.");
-
-		String message;
-
-		// Use "try-with-resources" to ensure the scanner is closed automatically after
-		// use.
-		try (Scanner scanner = new Scanner(classroomsFile.getInputStream()))
-		{
-			// Validate the uploaded file (checking if it's empty and has the correct
-			// content type).
-			this.validateFile(classroomsFile);
-
-			// Parse the classrooms from the CSV file (parser returns a message about the
-			// result).
-			message = classroomParser.parseClassroom(scanner);
-
-			// Wrap the result in a ResponseDto for standardized response formatting.
-			ResponseDto response = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, message);
-
-			// Return a success response with HTTP status 201 (Created).
-			log.debug("Returning success response with status: {}", HttpStatus.CREATED);
-			return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
-		} catch (IOException e)
-		{
-			// Log and return a response for file reading errors.
-			log.error("IO error while reading classrooms file: {}", e.getMessage(), e);
-			return ResponseEntity.internalServerError().body("ERROR: Error encountered while reading the file.");
-
-		} catch (ProjectorServerException e)
-		{
-			// Log and return a response for custom projector server exceptions.
-			log.error("Projector server error while processing classrooms file: {}", e.getMessage());
-			return ResponseEntity.internalServerError().body(e.getMapError());
-
-		} catch (Exception e)
-		{
-			// Log and return a response for unexpected errors.
-			log.error("Unexpected error while processing classrooms file: {}", e.getMessage(), e);
-			return ResponseEntity.internalServerError()
-					.body("ERROR: Unexpected exception occurred while parsing classrooms.");
-		}
-	}
-
+ 
 	/**
 	 * Handles the upload and parsing of a CSV file containing projector model data.
 	 * <p>
@@ -813,7 +719,7 @@ public class ProjectorController
 		try
 		{
 			// Retrieve all floor data from the repository
-			List<FloorDto> floors = this.floorRepository.findAllFloorAsDtos();
+			List<FloorDto> floors = this.projectorRepository.findAllFloorAsDtos();
 
 			// Log the number of retrieved floors (avoiding large data dump in the logs).
 			log.info("Retrieved {} floor(s).", floors.size());
@@ -854,7 +760,7 @@ public class ProjectorController
 		try
 		{
 			// Fetch the list of classrooms for the given floor
-			List<ClassroomDto> classrooms = this.classroomRepository.findClassroomsByFloorNameAsDto(floor);
+			List<ClassroomDto> classrooms = this.projectorRepository.findClassroomsByFloorNameAsDto(floor);
 
 			// Log the number of classrooms retrieved, avoid logging large data dumps
 			log.info("Retrieved {} classroom(s) for floor '{}'.", classrooms.size(), floor);
@@ -880,93 +786,6 @@ public class ProjectorController
 	// --------------------- END FLOORS & CLASSROOMS METHODS -----------------------
 
 	// ---------------------------- PROJECTOR METHODS ------------------------------
-
-	/**
-	 * Assigns a projector model to a classroom.
-	 * <p>
-	 * This method processes the assignment of a projector to a classroom. It first
-	 * validates that both the projector model and the classroom exist in the
-	 * database. If both entities are found, a new projector entity is created and
-	 * assigned to the specified classroom. If any errors occur during this process
-	 * (e.g., missing entities), appropriate exceptions are thrown.
-	 * </p>
-	 * 
-	 * @param projectorDto The Data Transfer Object (DTO) containing the projector
-	 *                     model name and the classroom name to which the projector
-	 *                     will be assigned.
-	 * @return ResponseEntity<?> The response entity containing the status of the
-	 *         operation. If the assignment is successful, it returns HTTP status
-	 *         201 (Created) with a success message. If errors are encountered, it
-	 *         returns an HTTP status 500 (Internal Server Error) with the
-	 *         appropriate error message.
-	 * 
-	 * @throws ProjectorServerException if the classroom or projector model does not
-	 *                                  exist, or any other failure occurs during
-	 *                                  the assignment process.
-	 */
-	@Transactional
-	@PostMapping("/projectors")
-	public ResponseEntity<?> createNewProjector(@RequestBody ProjectorDto projectorDto)
-	{
-		try
-		{
-			// Log the receipt of the assignment request
-			log.info("Received request to assign projector to classroom.");
-
-			String modelName = projectorDto.getModel();
-			String classroomName = projectorDto.getClassroom();
-
-			// Log the projector and classroom details for better traceability
-			log.debug("Assigning projector model '{}' to classroom '{}'.", modelName, classroomName);
-
-			// Check if the classroom exists in the database
-			Classroom classroomEntity = classroomRepository.findById(classroomName).orElseThrow(
-					() -> new ProjectorServerException(HttpStatus.NOT_FOUND.value(), "Classroom does not exist."));
-
-			log.debug("Classroom '{}' successfully retrieved.", classroomName);
-
-			// Check if the projector model exists in the database
-			ProjectorModel projectorModelEntity = projectorModelRepository.findById(modelName)
-					.orElseThrow(() -> new ProjectorServerException(HttpStatus.NOT_FOUND.value(),
-							"Projector model does not exist."));
-
-			log.debug("Projector model '{}' successfully retrieved.", modelName);
-
-			// At this point, both the classroom and projector model exist, so we proceed to
-			// assignment
-
-			// Create a new projector entity and associate it with the classroom and
-			// projector model
-			Projector projectorEntity = new Projector();
-			projectorEntity.setClassroom(classroomEntity);
-			projectorEntity.setModel(projectorModelEntity);
-
-			// Save the newly created projector entity
-			projectorRepository.save(projectorEntity);
-
-			// Log success message and return a response
-			String successMessage = String.format("Projector '%s' successfully assigned to classroom '%s'.", modelName,
-					classroomName);
-			log.debug(successMessage);
-
-			// Prepare the response DTO with the success status and message
-			ResponseDto responseDto = new ResponseDto(Constants.RESPONSE_STATUS_SUCCESS, successMessage);
-
-			// Return HTTP status 201 (Created) as a projector has been successfully
-			// assigned
-			return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
-		} catch (ProjectorServerException e)
-		{
-			// Log the error and return a response with a custom error message and status
-			log.error("Error assigning projector: {}", e.getMessage());
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMapError());
-		} catch (Exception e)
-		{
-			// Log unexpected errors and return a generic error message with status 500
-			log.error("Unexpected error while assigning projector: {}", e.getMessage());
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
-		}
-	}
 
 	/**
 	 * Retrieves a paginated list of projectors based on the specified criteria.
@@ -1068,30 +887,11 @@ public class ProjectorController
 
 			for (ProjectorInfoDto projectorDto : projectorDtoList)
 			{
-				String modelName = projectorDto.getModel();
 				String classroomName = projectorDto.getClassroom();
-
-				// Find the classroom in the database
-				Classroom classroomEntity = classroomRepository.findById(classroomName)
-						.orElseThrow(() -> new ProjectorServerException(499, "Classroom does not exist."));
-
-				// Log the retrieval of the classroom entity
-				log.debug("Classroom '{}' found in the database.", classroomName);
-
-				// Find the projector model in the database
-				ProjectorModel projectorModelEntity = projectorModelRepository.findById(modelName)
-						.orElseThrow(() -> new ProjectorServerException(499, "Projector model does not exist."));
-
-				// Log the retrieval of the projector model
-				log.debug("Projector model '{}' found in the database.", modelName);
-
-				// Create the composite ID for the projector
-				ProjectorId projectorId = new ProjectorId();
-				projectorId.setClassroom(classroomEntity);
-				projectorId.setModel(projectorModelEntity);
+				String modelName = projectorDto.getModel();
 
 				// Check if the projector assignment exists.
-				Optional<Projector> projectorOpt = projectorRepository.findById(projectorId);
+				Optional<Projector> projectorOpt = projectorRepository.findById(classroomName);
 				Projector projectorEntity = projectorOpt
 						.orElseThrow(() -> new ProjectorServerException(499, "Projector assignment does not exist."));
 
@@ -1187,41 +987,29 @@ public class ProjectorController
 	 *         (HTTP 200 OK) or an error message if the classroom does not exist
 	 *         (HTTP 404 Not Found).
 	 */
-	@GetMapping(value = "/classroom-projectors")
-	public ResponseEntity<?> getProjectorsByClassroom(@RequestParam(required = true) String classroom)
+	@GetMapping(value = "/classroom-projector")
+	public ResponseEntity<?> getProjectorByClassroom(@RequestParam(required = true) String classroom)
 	{
 		try
 		{
 			// Log the incoming request
 			log.info("Received request to get projectors for classroom: {}", classroom);
 
-			// Check if the classroom exists
-			boolean classroomExists = this.classroomRepository.existsById(classroom);
-
-			if (!classroomExists)
-			{
-				String message = "Classroom " + classroom + " does not exist.";
-				log.warn(message); // Log as warning when the classroom doesn't exist
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
-			}
-
-			// Retrieve the list of projectors for the provided classroom
-			List<ProjectorDto> projectors = this.projectorRepository.findProjectorsByClassroom(classroom);
-
-			// If no projectors found, return a suitable message
-			if (projectors.isEmpty())
-			{
-				String message = "No projectors assigned to classroom: " + classroom;
-				log.warn(message); // Log as warning if no projectors are assigned to the classroom
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
-			}
-
+			Projector projectorEntity = this.projectorRepository.findById(classroom).orElseThrow(
+					() -> {
+						String message = "Projector for classroom " + classroom + " does not exist.";
+						log.warn(message); // Log as warning when the classroom doesn't exist
+						return new ProjectorServerException(404, message);
+					}
+					);
+					
 			// Log the successful retrieval of projectors
-			log.info("Successfully retrieved {} projectors for classroom: {}", projectors.size(), classroom);
-
+			log.info("Projector {} successfully retrieved for classroom: {}", projectorEntity, classroom);
+			
 			// Return the projectors list with HTTP status 200 (OK)
-			return ResponseEntity.ok().body(projectors);
+			return ResponseEntity.ok().body(projectorEntity);
 
+	
 		} catch (Exception e)
 		{
 			// Log any unexpected errors and return a 500 (Internal Server Error) response
@@ -1486,50 +1274,25 @@ public class ProjectorController
 	 * 
 	 */
 	@GetMapping(value = "/server-events")
-	public String serveCommandToController(@RequestParam(required = true) String projectorModel,
-			@RequestParam(required = true) String projectorClassroom)
+	public String serveCommandToController(	@RequestParam(required = true) String projectorClassroom)
 	{
+		// Log the incoming request for processing models.
+		log.info("Received GET request to '/server-events' from classroom '{}'.", projectorClassroom);
+		
 		try
 		{
 
-			// Recupera opcional clase.
-			Optional<Classroom> classroomOpt = this.classroomRepository.findById(projectorClassroom);
-
-			// Recupera clase o lanza error.
-			Classroom classroomEntity = classroomOpt.orElseThrow(() ->
-			{
-				String message = "The specified classroom does not exist.";
-				log.error(message);
-				return new ProjectorServerException(494, message);
-			});
-
-			// Recupera opcional modelo.
-			Optional<ProjectorModel> projectorModelOpt = this.projectorModelRepository.findById(projectorModel);
-
-			// Recupera modelo o lanza error.
-			ProjectorModel projectorModelEntity = projectorModelOpt.orElseThrow(() ->
-			{
-				String message = "The specified model does not exist.";
-				log.error(message);
-				return new ProjectorServerException(494, message);
-			});
-
-			// Crea el ID del proyector a busar.
-
-			ProjectorId projectorId = new ProjectorId();
-			projectorId.setClassroom(classroomEntity);
-			projectorId.setModel(projectorModelEntity);
-
 			// Recupera el opcional.
-			Optional<Projector> projectorOpt = this.projectorRepository.findById(projectorId);
+			Optional<Projector> projectorOpt = this.projectorRepository.findById(projectorClassroom);
 
 			// Recupera la entidad o lanza error.
 			Projector projectorEntity = projectorOpt.orElseThrow(() ->
 			{
-				String message = "The specified projector unit does not exist.";
+				String message = "ERROR: There are no projectors assigned to this classroom.";
 				log.error(message);
 				return new ProjectorServerException(494, message);
 			});
+
 
 			// Recupera listado eventos servidor para este proyector que estan en pendiente
 			// (solo los pendientes).
@@ -1580,15 +1343,6 @@ public class ProjectorController
 			return e.getMessage();
 		}
 
-	}
-
-	@GetMapping(value = "/server-events-table")
-	public ResponseEntity<?> serveCommandsTable()
-	{
-
-		List<TableServerEventDto> commandsList = this.serverEventRepository.getAllServerEventDtos();
-
-		return ResponseEntity.ok().body(commandsList);
 	}
 
 	@GetMapping(value = "/micro-greeting")
@@ -1769,9 +1523,9 @@ public class ProjectorController
 
 		projectorOverview.setNumberOfProjectors(this.projectorRepository.count());
 		projectorOverview.setNumberOfActions(this.actionRepositories.count());
-		projectorOverview.setNumberOfClassrooms(this.classroomRepository.count());
+		projectorOverview.setNumberOfClassrooms(this.projectorRepository.countClassrooms());
 		projectorOverview.setNumberOfCommands(this.commandRepository.count());
-		projectorOverview.setNumberOfFloors(this.floorRepository.count());
+		projectorOverview.setNumberOfFloors(this.projectorRepository.countFloors());
 		projectorOverview.setNumberOfModels(this.projectorModelRepository.count());
 
 		return ResponseEntity.ok().body(projectorOverview);
@@ -1801,29 +1555,6 @@ public class ProjectorController
 
 	}
 
-	@GetMapping("/models-overview")
-	public ResponseEntity<?> getModelsOverview()
-	{
-
-		//
-		log.debug("Request for models overview received.");
-		List<ModelOverviewDto> modelOverviewDtoList = new ArrayList<>();
-		List<ProjectorModel> modelList = this.projectorModelRepository.findAll();
-
-		for (ProjectorModel model : modelList)
-		{
-
-			ModelOverviewDto currentDto = new ModelOverviewDto();
-			currentDto.setModelname(model.getModelName());
-			currentDto.setAssociatedProjectors(model.getAssociatedProjectors().size());
-			currentDto.setAssociatedCommands(model.getAssociatedCommands().size());
-
-			modelOverviewDtoList.add(currentDto);
-		}
-
-		return ResponseEntity.ok().body(modelOverviewDtoList);
-
-	}
 
 	@GetMapping("/event-states")
 	public ResponseEntity<?> getEventStatusList()

@@ -2,13 +2,10 @@ package es.iesjandula.reaktor_projector_server.entities;
 
 import java.util.List;
 
-import es.iesjandula.reaktor_projector_server.entities.ids.ProjectorId;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,33 +32,16 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@IdClass(ProjectorId.class)
 public class Projector
 {
-	/**
-	 * The model of the projector.
-	 * <p>
-	 * This is a many-to-one relationship with the {@link ProjectorModel} entity.
-	 * The projector is associated with a specific model, and the model name is
-	 * stored in the "modelName" field.
-	 * </p>
-	 */
 	@Id
-	@ManyToOne
-	@JoinColumn(name = "modelName")
-	private ProjectorModel model;
-
-	/**
-	 * The classroom where the projector is located.
-	 * <p>
-	 * This field, along with the projector model, forms the composite primary key
-	 * for this entity.
-	 * </p>
-	 */
-	@Id
-	@ManyToOne
-	@JoinColumn(name = "classroom")
-	private Classroom classroom;
+	private String classroom;
+	
+	@Column( name = "floor")
+	private String floor;
+	
+	@Column ( name = "model") 
+	private String model;
 
 	/**
 	 * List of server events associated with the projector.
@@ -69,12 +49,4 @@ public class Projector
 	@OneToMany(mappedBy = "projector", cascade = CascadeType.REMOVE, orphanRemoval = false)
 	private List<ServerEvent> serverEvents;
 
-	// Special to string method to prevent recursive calls and null pointers.
-	@Override
-	public String toString()
-	{
-		return new StringBuilder().append("Projector - model: ")
-				.append(this.model == null ? "N/A" : this.model.getModelName()).append(" | classroom: ")
-				.append(this.classroom == null ? "N/A" : this.classroom.getClassroomName()).toString();
-	}
 }
