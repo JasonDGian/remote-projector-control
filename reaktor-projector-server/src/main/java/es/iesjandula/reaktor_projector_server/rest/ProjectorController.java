@@ -1138,6 +1138,40 @@ public class ProjectorController
 		}
 	}
 
+	
+	@Transactional
+	@DeleteMapping("/projectors-all")
+	public ResponseEntity<?> deleteAllProjector()
+	{
+		try
+		{
+			log.info("Received request to delete ALL projectors batch");
+
+			// Response DTO for returning status
+			ResponseDto responseDto = new ResponseDto();
+			
+			String message;
+						
+			List<Projector> projectorEntitiList = this.projectorRepository.findAll();
+
+			this.projectorRepository.deleteAll(projectorEntitiList);
+
+			// Set the response DTO.
+			responseDto.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
+			responseDto.setMessage(String.format("Successfully removed %d projectors.", projectorEntitiList.size()));
+
+			// Return the success response.
+			return ResponseEntity.status(HttpStatus.OK).body(responseDto);
+
+		}
+		catch (Exception e)
+		{
+			// Log the error for unexpected exceptions
+			log.error("Unexpected error encountered while removing projector: {}", e.getMessage());
+			return ResponseEntity.internalServerError().body("Unexpected error occurred: " + e.getMessage());
+		}
+	}
+
 	// Recibe una lista de proyectores DTO, por cada uno de ellos controla si
 	// existe, si existe lo añade a la lsita y lueygo la lista una vez compelta la
 	// borra.
