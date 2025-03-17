@@ -568,11 +568,8 @@ public class ProjectorController
 			RichResponseDto richResponseDto = new RichResponseDto();
 
 			// Check if no files were received, and return an error message.
-			if (
-					(commandsFile == null || commandsFile.isEmpty()) 
-					&& 
-					(projectorsFile == null || projectorsFile.isEmpty())
-				)
+			if ((commandsFile == null || commandsFile.isEmpty())
+					&& (projectorsFile == null || projectorsFile.isEmpty()))
 			{
 				message = "No files received for parse operation.";
 				log.error(message);
@@ -588,8 +585,8 @@ public class ProjectorController
 					this.validateFile(projectorsFile); // Validate the file before processing.
 					richResponseDto.setMessage2(projectorParser.parseProjectors(scanner)); // Parse projectors.
 					richResponseDto.setStatus2(Constants.RESPONSE_STATUS_SUCCESS);
-				}
-				catch ( ProjectorServerException e ){
+				} catch (ProjectorServerException e)
+				{
 					richResponseDto.setMessage2(e.getMessage()); // Parse commands.
 					richResponseDto.setStatus2(Constants.RESPONSE_STATUS_ERROR);
 				}
@@ -609,8 +606,8 @@ public class ProjectorController
 					this.validateFile(commandsFile); // Validate the file before processing.
 					richResponseDto.setMessage1(this.commandsParser.parseCommands(scanner)); // Parse commands.
 					richResponseDto.setStatus1(Constants.RESPONSE_STATUS_SUCCESS);
-				}
-				catch ( ProjectorServerException e ){
+				} catch (ProjectorServerException e)
+				{
 					richResponseDto.setMessage1(e.getMessage()); // Parse commands.
 					richResponseDto.setStatus1(Constants.RESPONSE_STATUS_ERROR);
 				}
@@ -622,8 +619,7 @@ public class ProjectorController
 			}
 
 			// Log the final parsing results.
-			log.info("Commands: {}\nProjectors: {}", richResponseDto.getMessage1(),
-					richResponseDto.getMessage2());
+			log.info("Commands: {}\nProjectors: {}", richResponseDto.getMessage1(), richResponseDto.getMessage2());
 
 			// Return the structured response DTO with success status.
 			return ResponseEntity.ok(richResponseDto);
@@ -1138,7 +1134,6 @@ public class ProjectorController
 		}
 	}
 
-	
 	@Transactional
 	@DeleteMapping("/projectors-all")
 	public ResponseEntity<?> deleteAllProjector()
@@ -1149,9 +1144,9 @@ public class ProjectorController
 
 			// Response DTO for returning status
 			ResponseDto responseDto = new ResponseDto();
-			
+
 			String message;
-						
+
 			List<Projector> projectorEntitiList = this.projectorRepository.findAll();
 
 			this.projectorRepository.deleteAll(projectorEntitiList);
@@ -1163,8 +1158,7 @@ public class ProjectorController
 			// Return the success response.
 			return ResponseEntity.status(HttpStatus.OK).body(responseDto);
 
-		}
-		catch (Exception e)
+		} catch (Exception e)
 		{
 			// Log the error for unexpected exceptions
 			log.error("Unexpected error encountered while removing projector: {}", e.getMessage());
@@ -1832,10 +1826,11 @@ public class ProjectorController
 	}
 
 	@GetMapping("/event-states")
-	public ResponseEntity<?> getEventStatusList(){
-		
+	public ResponseEntity<?> getEventStatusList()
+	{
+
 		String[] possibleEventsList = Constants.POSSIBLE_EVENT_STATUS;
-		
+
 		return ResponseEntity.ok().body(possibleEventsList);
 	}
 }

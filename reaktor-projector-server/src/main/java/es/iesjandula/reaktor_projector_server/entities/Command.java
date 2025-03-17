@@ -1,6 +1,7 @@
 package es.iesjandula.reaktor_projector_server.entities;
 
 import es.iesjandula.reaktor_projector_server.entities.ids.CommandId;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
@@ -39,7 +40,7 @@ public class Command
 	 * The action that this command triggers.
 	 */
 	@Id
-	@ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)  // Cascade delete when Action is deleted
 	@JoinColumn(name = "actionName")
 	private Action action;
 
