@@ -1,8 +1,12 @@
 package es.iesjandula.reaktor_projector_server.entities;
 
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,6 +39,10 @@ public class Action
 	@Id
 	@Column(name = "action_name")
 	private String actionName;
+	
+	// When an action is removed all the related commands are deleted as well.
+    @OneToMany(mappedBy = "action", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Command> commands;
 
 	// Special to string method to prevent recursive calls and null pointers.
 	@Override

@@ -1476,8 +1476,13 @@ public class ProjectorController
 			}
 
 			this.actionRepositories.deleteAll(actionsToDelete);
+			
+			ResponseDto response = new ResponseDto();
+			String message = actionsToDelete.size() + " actions deleted successfully.";
+			response.setMessage(message);
+			response.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
 
-			return (ResponseEntity.ok().body("Deleted " + recordsDeleted + " actions from DB."));
+			return ResponseEntity.ok().body(response);
 
 		}
 
@@ -1485,8 +1490,10 @@ public class ProjectorController
 		// EN CASCADA.
 		catch (DataIntegrityViolationException e)
 		{
-
 			return (ResponseEntity.ok().body("ERROR EN BORRADO POR INTEGRIDAD. \n" + e.getMessage()));
+		}
+		catch ( Exception e ){
+			return ResponseEntity.internalServerError().body("Unexpected error while deleting actions.");
 		}
 	}
 

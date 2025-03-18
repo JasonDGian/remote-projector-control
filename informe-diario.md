@@ -382,3 +382,14 @@ Rediseña vista registro eventos para incorporar componentes y poder eliminar cl
     - Eliminados hasta ahora 5 componentes refactorizados dejando un total de 9 componentes.     
 
 **TIEMPO DEDICADO: 11 horas**
+
+
+# Dia 28 - 14/03/25    
+- Refactor de los modales para reducir codigo repetido.
+- Elimina funcion fetchModelsOverview y respectivo modulo no utilizado debido a nuevo diseño.
+- Modifica componentes vue de SelectableCommandTable y SelectableActionTable para incluir banners de alerta.
+- Identificado un problema en la actualizacion de la lista de acciones seleccionadas al elminar una accion.
+
+TODO: Encontrar origen problema de sincronizacion.
+
+**TIEMPO DEDICADO: 3 horas**
