@@ -384,12 +384,33 @@ Rediseña vista registro eventos para incorporar componentes y poder eliminar cl
 **TIEMPO DEDICADO: 11 horas**
 
 
-# Dia 28 - 14/03/25    
+# Dia 28 - 18/03/25    
 - Refactor de los modales para reducir codigo repetido.
 - Elimina funcion fetchModelsOverview y respectivo modulo no utilizado debido a nuevo diseño.
 - Modifica componentes vue de SelectableCommandTable y SelectableActionTable para incluir banners de alerta.
 - Identificado un problema en la actualizacion de la lista de acciones seleccionadas al elminar una accion.
 
 TODO: Encontrar origen problema de sincronizacion.
+
+**TIEMPO DEDICADO: 3 horas**
+
+
+# Dia 29 - 19/03/25    
+
+- Arregladas las referencias bidireccionales en los formularios de borrado de acción y de comandos.
+- Añade subtitulos a los FormBoxes para control remoto y carga de ficheros CSV.
+- Añade tooltips para los iconos de los estado de evento.  
+- Deshabilitado temporalmente el div colapsable debido a malfuncionamiento.
+- Añade mensaje de cuenta atrás para disponibilidad de comando.
+
+TODO: 
+- Finalizar los modales de borrado.
+- Revisar mecanismo de parseo en servidor.
+- Añadir campo de descripción para errores o estados en registro eventos.
+- Añadir tooltip para descripcion registro eventos.
+- Controlar spinners en modales.
+- Controlar comportamiento de borrado de acciones y comandos cuando existen registros relacionados al elemento a borrar.
+- Replicar estilo de carga de modal de accion y comandos en modal de proyectores.
+- Equiparar botones efecto hover.
 
 **TIEMPO DEDICADO: 3 horas**
