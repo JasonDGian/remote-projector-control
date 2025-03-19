@@ -1,5 +1,7 @@
 package es.iesjandula.reaktor_projector_server.repositories;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,5 +31,11 @@ public interface IActionRepository extends JpaRepository<Action, String>
         SELECT new es.iesjandula.reaktor_projector_server.dtos.ActionDto(ac.actionName) 
         FROM Action ac
     """)
-    Page<ActionDto> findAllActionsAsDto(Pageable pageable);
+    Page<ActionDto> findAllActionsAsDtoPaged(Pageable pageable);
+    
+    @Query("""
+            SELECT new es.iesjandula.reaktor_projector_server.dtos.ActionDto(ac.actionName) 
+            FROM Action ac
+        """)
+    List<ActionDto> findAllActionsAsDto();
 }

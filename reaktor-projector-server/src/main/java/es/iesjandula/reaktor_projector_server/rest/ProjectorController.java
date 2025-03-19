@@ -1378,8 +1378,10 @@ public class ProjectorController
 	@GetMapping(value = "/actions")
 	public ResponseEntity<?> getProjectorModelCommands()
 	{
+		
+		
 
-		return ResponseEntity.ok().body(this.actionRepositories.findAll());
+		return ResponseEntity.ok().body(this.actionRepositories.findAllActionsAsDto());
 
 	}
 
@@ -1450,7 +1452,7 @@ public class ProjectorController
 	{
 		log.debug("Call to fetch actions page received");
 
-		Page<ActionDto> actionsPage = this.actionRepositories.findAllActionsAsDto(pageable);
+		Page<ActionDto> actionsPage = this.actionRepositories.findAllActionsAsDtoPaged(pageable);
 
 		return ResponseEntity.ok().body(actionsPage);
 	}
