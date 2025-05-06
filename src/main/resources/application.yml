@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/reaktor_projectorsserver?createDatabaseIfNotExist=true
     username: root
-    password: 1234
+    password: toor
     hikari:
       connection-timeout: 60000
       maximum-pool-size: 5
@@ -15,10 +15,10 @@ server:
 
 logging:
   level:
-    root: INFO # Ensures all logs are visible in the console
-    es.iesjandula: DEBUG # Your specific package logs will be in DEBUG mode
+    root: INFO
+    es.iesjandula: DEBUG
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n" # Console log format
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   file:
     name: proyectores.log
   logback:
@@ -26,3 +26,9 @@ logging:
       max-size: 1MB
       max-history: 20
       total-size-cap: 10MB
+
+reaktor:
+  publicKeyFile: /home/jaydee/.openssl/public_key.pem
+  privateKeyFile: /home/jaydee/.openssl/private_key.pem
+  googleCredentialsFile: /home/jaydee/.openssl/firebaseGoogleCredentials.json
+  urlCors: http://localhost:5173, http://192.168.1.209:5173

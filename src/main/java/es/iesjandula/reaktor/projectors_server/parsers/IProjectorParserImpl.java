@@ -51,8 +51,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Service
-public class IProjectorParserImpl implements IProjectorParser
-{
+public class IProjectorParserImpl implements IProjectorParser {
 
 	@Autowired
 	private IProjectorRepository projectorRepository;
@@ -86,14 +85,12 @@ public class IProjectorParserImpl implements IProjectorParser
 	 */
 	@Override
 	@Transactional
-	public String parseProjectors(Scanner scanner) throws ProjectorServerException
-	{
+	public String parseProjectors(Scanner scanner) throws ProjectorServerException {
 
 		log.debug("Projector parsing process initiated.");
 
 		// Check if the CSV file is empty
-		if (!scanner.hasNextLine())
-		{
+		if (!scanner.hasNextLine()) {
 			log.error("The received file is empty. No projectors to parse.");
 			throw new ProjectorServerException(492, "Empty CSV file received in parseProjectors() method.");
 		}
@@ -101,14 +98,14 @@ public class IProjectorParserImpl implements IProjectorParser
 		String message;
 		int recordsSaved = 0;
 		int recordLine = 0;
+		int recordsSkipped = 0;
 		List<Projector> projectorsList = new ArrayList<>();
 
 		// Skip the first line (assumed to be headers)
 		scanner.nextLine();
 
 		// Process each line in the CSV file
-		while (scanner.hasNextLine())
-		{
+		while (scanner.hasNextLine()) {
 			log.debug("---------------------------- PROJECTOR ENTITY " + recordLine
 					+ " -------------------------------------------");
 
@@ -117,8 +114,7 @@ public class IProjectorParserImpl implements IProjectorParser
 			// Read and split the CSV line
 			String[] csvFields = scanner.nextLine().split(Constants.CSV_DELIMITER);
 
-			if (csvFields.length != 3)
-			{
+			if (csvFields.length != 3) {
 				message = "ERROR: Malformed line in the Projectors CSV file in line " + recordLine + ".";
 				log.error(message);
 				throw new ProjectorServerException(499, message);
@@ -129,8 +125,7 @@ public class IProjectorParserImpl implements IProjectorParser
 			String floorName = csvFields[2].trim();
 
 			// If the current line is not exactly 3 fields long, throw exception.
-			if (modelName.isBlank() || classroomName.isBlank() || floorName.isBlank())
-			{
+			if (modelName.isBlank() || classroomName.isBlank() || floorName.isBlank()) {
 				message = "ERROR: Blank or empty value detected in the Projectors CSV file in line " + recordLine + ".";
 				log.error(message);
 				throw new ProjectorServerException(499, message);
@@ -139,15 +134,15 @@ public class IProjectorParserImpl implements IProjectorParser
 			// Check if projector in already exists...
 			Optional<Projector> projectorOptional = this.projectorRepository.findById(classroomName);
 
-			if (projectorOptional.isPresent())
-			{
-				message = "ERROR: Classroom " + classroomName + " already has an associated projector.";
-				log.debug(message);
-				throw new ProjectorServerException(499, message);
+			if (projectorOptional.isPresent()) {
+				log.debug("Projector in classroom '{}' already exists in the database. Skipping record.",
+						classroomName);
+				recordsSkipped++;
+				// End iteration.
+				continue;
 			}
-
-
 			// if doesn't exists: create and save a new projector entry
+			log.debug("Projector in classroom '{}' not present in the database. Saving record now.", classroomName);
 			Projector newProjector = new Projector();
 			newProjector.setClassroom(classroomName);
 			newProjector.setModel(modelName);
@@ -157,14 +152,16 @@ public class IProjectorParserImpl implements IProjectorParser
 			projectorsList.add(newProjector);
 
 			recordsSaved++;
-			log.debug("Projector unit with model '{}' in classroom '{}' successfully added to save list.", modelName, classroomName);
-
+			log.debug("Projector unit with model '{}' in classroom '{}' successfully added to save list.", modelName,
+					classroomName);
 		}
-		
+
 		this.projectorRepository.saveAllAndFlush(projectorsList);
 
-		message = "PROJECTORS: Records saved: " + recordsSaved + ".";
+		message = "PROJECTORS: Records saved: " + recordsSaved + " - Records skipped: " + recordsSkipped;
+		
 		log.info(message);
+		
 		return message;
 	}
 }
