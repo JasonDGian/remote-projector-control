@@ -343,8 +343,12 @@ public class ProjectorAdminController {
 			ResponseDto responseDto = new ResponseDto();
 			String message;
 			
-			int deletedRecords = this.projectorRepository.deleteAllRecords();
-
+			List<Projector> projectorsList = this.projectorRepository.findAll();
+			
+			this.projectorRepository.deleteAll(projectorsList);
+			
+			int deletedRecords = projectorsList.size();
+			
 			// Set the response DTO.
 			message = String.format("Successfully removed %d projectors.", deletedRecords);
 			log.info(message);
@@ -757,5 +761,4 @@ public class ProjectorAdminController {
 		log.info("CSV file validation successful.");
 	}
 
-	
 }

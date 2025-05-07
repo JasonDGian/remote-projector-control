@@ -12,6 +12,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import es.iesjandula.reaktor.base.security.models.DtoUsuarioExtended;
 import es.iesjandula.reaktor.base.utils.BaseConstants;
 import es.iesjandula.reaktor.projectors_server.dtos.ActionDto;
 import es.iesjandula.reaktor.projectors_server.dtos.ClassroomDto;
@@ -84,7 +86,7 @@ public class ProjectorCommonsController {
 	 * @throws ProjectorServerException If any of the entities cannot be found or if
 	 *                                  input parameters are invalid.cla
 	 */
-	private ServerEvent createServerEventEntity(ProjectorDto projectorDto, String commandActionName)
+	private ServerEvent createServerEventEntity(ProjectorDto projectorDto, String commandActionName, String userEmail)
 			throws ProjectorServerException {
 
 		String model = projectorDto.getModel();
@@ -145,8 +147,7 @@ public class ProjectorCommonsController {
 		// Get the current date and time for the event timestamp.
 		LocalDateTime dateTime = LocalDateTime.now();
 
-		// Placeholder for user identification (can be updated as per requirement).
-		String user = "TO DO"; // TODO: Replace with actual user identification logic
+		String user = userEmail;
 
 		// Set the default status of the event to pending from constants class.
 		String defaultStatus = Constants.EVENT_STATUS_PENDING;
@@ -352,6 +353,7 @@ public class ProjectorCommonsController {
 	@PreAuthorize("hasAnyRole('" + BaseConstants.ROLE_ADMINISTRADOR + "', '" + BaseConstants.ROLE_PROFESOR + "')")
 	@PostMapping(value = "/server-events-batch")
 	public ResponseEntity<?> createServerEventBatch(
+			@AuthenticationPrincipal DtoUsuarioExtended usuario,
 			@RequestBody(required = true) ServerEventBatchDto serverEventBatchDto) {
 		try {
 			log.debug("POST request for /server-events-batch received");
@@ -361,7 +363,9 @@ public class ProjectorCommonsController {
 
 			// Extract action name from the request DTO
 			String commandActionName = serverEventBatchDto.getAction();
-
+			
+			// Extract user email from user dto.
+			String userEmail = usuario.getEmail();
 			// Extract list of projectors from the request DTO
 			List<ProjectorDto> projectorList = serverEventBatchDto.getProjectorList();
 
@@ -379,7 +383,7 @@ public class ProjectorCommonsController {
 			// Loop through each projector and create a corresponding server event
 			for (ProjectorDto projectorDto : projectorList) {
 				// Create server event for each projector and add it to the list
-				ServerEvent serverEventEntity = this.createServerEventEntity(projectorDto, commandActionName);
+				ServerEvent serverEventEntity = this.createServerEventEntity(projectorDto, commandActionName, userEmail);
 				serverEventList.add(serverEventEntity);
 				serverEventHistoryList.add(createServerEventHistoryFromServerEntity(serverEventEntity));
 			}
@@ -422,6 +426,7 @@ public class ProjectorCommonsController {
 	}
 	
 
+	
 	@PreAuthorize("hasAnyRole('" + BaseConstants.ROLE_ADMINISTRADOR + "', '" + BaseConstants.ROLE_PROFESOR + "')")
 	@PostMapping("/server-events")
 	public ResponseEntity<?> getEventsPage(@RequestBody(required = false) EventFilterObject eventFilterObject,
