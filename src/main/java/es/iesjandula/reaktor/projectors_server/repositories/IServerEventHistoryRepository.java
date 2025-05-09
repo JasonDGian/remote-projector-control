@@ -18,19 +18,6 @@ import es.iesjandula.reaktor.projectors_server.entities.ServerEventHistory;
 @Repository
 public interface IServerEventHistoryRepository extends JpaRepository<ServerEventHistory, Long> {
 
-	/**
-	 * Retrieves a list of simplified server event details for a given projector and
-	 * action status. The results are ordered by event date in descending order.
-	 * 
-	 * @param projector    the projector whose events are to be retrieved
-	 * @param actionStatus the status of the action (e.g., OPEN, CLOSED) to filter
-	 *                     events
-	 * @return a list of simplified server event details
-	 */
-	@Query("SELECT new es.iesjandula.reaktor.projectors_server.dtos.SimplifiedServerEventDto( se.eventId, se.command.command, se.actionStatus ) "
-			+ "FROM ServerEvent se " + "WHERE se.projector = :projector " + "AND se.actionStatus = :actionStatus "
-			+ "ORDER BY se.dateTime DESC")
-	public List<SimplifiedServerEventDto> findRecentServerEventsByStatus(Projector projector, String actionStatus);
 
 	/**
 	 * Retrieves a list of server events for a given projector and action status,
@@ -41,9 +28,14 @@ public interface IServerEventHistoryRepository extends JpaRepository<ServerEvent
 	 *                     events
 	 * @return a list of server events
 	 */
-	@Query("SELECT se FROM ServerEvent se " + "WHERE se.projector = :projector "
-			+ "AND se.actionStatus = :actionStatus " + "ORDER BY se.dateTime DESC")
-	public List<ServerEvent> findRecentServerEventsByProjector(Projector projector, String actionStatus);
+	@Query(
+			"""
+					SELECT seh FROM ServerEventHistory seh 
+					WHERE seh.classroom = :classroom 
+					AND seh.actionStatus = "PENDING" 
+					ORDER BY seh.dateTime DESC
+					""")
+	public List<ServerEventHistory> findRecentPendingServerEventsByClassroom( String classroom );
 
 	/**
 	 * Retrieves a paginated list of table-formatted server event details with
@@ -93,9 +85,10 @@ public interface IServerEventHistoryRepository extends JpaRepository<ServerEvent
 	 */
 	@Query("""
 			SELECT COUNT(*)
-			FROM ServerEvent se
-			WHERE se.actionStatus = :actionStatus
+			FROM ServerEventHistory seh
+			WHERE seh.actionStatus LIKE :actionStatus
 			""")
 	public Long countServerEventsByStatus(@Param("actionStatus") String actionStatus);
+	
 
 }

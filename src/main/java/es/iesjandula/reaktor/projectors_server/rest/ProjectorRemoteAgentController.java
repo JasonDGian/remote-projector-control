@@ -1,0 +1,225 @@
+package es.iesjandula.reaktor.projectors_server.rest;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import es.iesjandula.reaktor.base.utils.BaseConstants;
+import es.iesjandula.reaktor.projectors_server.dtos.ResponseDto;
+import es.iesjandula.reaktor.projectors_server.dtos.SimplifiedServerEventDto;
+import es.iesjandula.reaktor.projectors_server.entities.Projector;
+import es.iesjandula.reaktor.projectors_server.entities.ServerEventHistory;
+import es.iesjandula.reaktor.projectors_server.parsers.interfaces.ICommandParser;
+import es.iesjandula.reaktor.projectors_server.parsers.interfaces.IProjectorParser;
+import es.iesjandula.reaktor.projectors_server.repositories.ICommandRepository;
+import es.iesjandula.reaktor.projectors_server.repositories.IProjectorRepository;
+import es.iesjandula.reaktor.projectors_server.repositories.IServerEventHistoryRepository;
+import es.iesjandula.reaktor.projectors_server.repositories.IServerEventRepository;
+import es.iesjandula.reaktor.projectors_server.utils.Constants;
+import es.iesjandula.reaktor.projectors_server.utils.ProjectorServerException;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RestController
+@RequestMapping("/projectors")
+public class ProjectorRemoteAgentController {
+
+	@Autowired
+	ICommandParser commandsParser;
+
+	@Autowired
+	IProjectorParser projectorParser;
+
+	@Autowired
+	IServerEventRepository serverEventRepository;
+
+	@Autowired
+	IProjectorRepository projectorRepository;
+
+	@Autowired
+	ICommandRepository commandRepository;
+
+	@Autowired
+	IServerEventHistoryRepository serverEventHistoryRepository;
+
+	// -------------------------- SERVER EVENT METHODS -----------------------------
+
+	/**
+	 * Updates the status of a server event.
+	 * 
+	 * This endpoint receives an event ID and a new status, verifies the input,
+	 * checks if the event exists, and updates the event status accordingly.
+	 * 
+	 * @param eventId        The ID of the event to be updated.
+	 * @param eventNewStatus The new status to be set for the event.
+	 * @return A response entity with a status and message indicating the result of
+	 *         the operation.
+	 */
+	@Transactional
+	@PreAuthorize("hasRole('" + BaseConstants.ROLE_CLIENTE_PROYECTOR + "')")
+	@PutMapping(value = "/server-events")
+	public ResponseEntity<?> updateServerEventStatus(@RequestParam(name = "eventId") String eventId,
+			@RequestParam(name = "newStatus") String eventNewStatus) {
+
+		try {
+			// Log the incoming request parameters for the event status update.
+			log.info("PUT request for '/server-events' received with parameters 'Event ID: {}, Event new Status: {}'",
+					eventId, eventNewStatus);
+
+			eventNewStatus = eventNewStatus.toUpperCase().trim();
+
+			log.info("Formatting status string {}", eventNewStatus);
+
+			// Prepare the response object to send back the status and message.
+			ResponseDto response = new ResponseDto();
+			String message;
+
+			// Check if eventId or eventNewStatus is null or blank, and handle error.
+			if (eventId == null || eventId.isBlank() || eventNewStatus == null || eventNewStatus.isBlank()) {
+				message = "Invalid or incorrect parameters in the request.Event Id or Status is blank or null.";
+				log.error(message);
+				throw new ProjectorServerException(499, message); // Error code for invalid parameters.
+			}
+
+			// Validate that the new event status is part of the acceptable list.
+			if (!Constants.POSSIBLE_EVENT_STATUS.contains(eventNewStatus)) {
+				message = "Error updating event status: The selected status for the event does not exist.";
+				log.error(message);
+				throw new ProjectorServerException(499, message); // Error code for invalid event status.
+			}
+
+			// Convert eventId to Long
+			Long eventIdLong = Long.valueOf(eventId);
+
+			// Fetch the corresponding event from the database.
+			/*
+			 * Block replaced by history mechanism. ServerEvent serverEventEntity =
+			 * this.serverEventRepository.findById(eventIdLong).orElseThrow(() -> { String
+			 * messagex = "The server event with ID '" + eventIdLong + "' does not exist.";
+			 * log.error(messagex); return new ProjectorServerException(494, messagex); //
+			 * Error code for event not found. });
+			 */
+
+			// Fetch the corresponding event from the database history.
+			ServerEventHistory serverEventEntity = this.serverEventHistoryRepository.findById(eventIdLong)
+					.orElseThrow(() -> {
+						String messagex = "The server event with ID '" + eventIdLong + "' does not exist.";
+						log.error(messagex);
+						return new ProjectorServerException(494, messagex); // Error code for event not found.
+					});
+
+			// Capture the current status of the event before updating it.
+			String oldStatus = serverEventEntity.getActionStatus();
+
+			// Update the event's status to the new status.
+			serverEventEntity.setActionStatus(eventNewStatus);
+
+			// Prepare a success message with the old and new status.
+			message = "Event with ID " + eventId + " successfully updated from " + oldStatus + " to " + eventNewStatus;
+			log.info(message); // Log successful event status update.
+
+			// Set the response status and message.
+			response.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
+			response.setMessage(message);
+
+			// Persist the updated event entity to the database.
+			/*
+			 * Block replaced by history mechanism.
+			 * this.serverEventRepository.saveAndFlush(serverEventEntity);
+			 */
+
+			this.serverEventHistoryRepository.saveAndFlush(serverEventEntity);
+
+			// Return the response with success status.
+			return ResponseEntity.ok().body(response);
+
+		} catch (ProjectorServerException e) {
+			// Log the exception details and return a response with the error.
+			log.error("Error updating event status", e);
+			return ResponseEntity.internalServerError().body(e.getMapError());
+		} catch (Exception e) {
+			// Log the exception details and return a response with the error.
+			log.error("Unexpected error updating event status", e);
+			return ResponseEntity.internalServerError().body(e.getLocalizedMessage());
+		}
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Endpoint que recibe una peticion por parte de un microcontrolador y devuelve
+	 * una acción a realizar.
+	 * 
+	 * Este endpoint espera parametros utilizados para identificar el proyector con
+	 * el que el micro está asociado. Esta identificacion es necesaria para poder
+	 * saber que orden debe de servir el endpoint al microcontrolador para que este
+	 * la re-envie al proyector.
+	 * 
+	 * Enviar al micro: ID accion + Orden
+	 * 
+	 */
+	@PreAuthorize("hasAnyRole('" + BaseConstants.ROLE_ADMINISTRADOR + "', '" + BaseConstants.ROLE_CLIENTE_PROYECTOR
+			+ "')")
+	@GetMapping(value = "/server-events")
+	public String serveCommandToController(@RequestParam(required = true) String projectorClassroom) {
+		// Log the incoming request for processing models.
+		log.info("GET request for '/server-events' received with parameter '{}'.", projectorClassroom);
+
+		try {
+			
+			// Recupera el proyector o lanza error si no existe.
+			Projector projectorEntity = this.projectorRepository.findById(projectorClassroom).orElseThrow(() -> {
+				String message = "ERROR: There are no projectors assigned to this classroom.";
+				log.error(message);
+				return new ProjectorServerException(494, message);
+			});
+			
+			
+
+			// Recupera listado eventos servidor para este proyector que estan en pendiente.
+			List<ServerEventHistory> serverEventsList = this.serverEventHistoryRepository.findRecentPendingServerEventsByClassroom(projectorClassroom);
+
+			if ( serverEventsList.size() < 1 ) {
+				return "No tasks";
+			}
+			
+			// Evento servidor mas reciente de todos.
+			ServerEventHistory mostRecentEvent = serverEventsList.get(0);
+
+			// Configura evento simplificado.
+			SimplifiedServerEventDto simpleEvent = new SimplifiedServerEventDto();
+			simpleEvent.setActionStatus(mostRecentEvent.getActionStatus());
+			simpleEvent.setCommandInstruction(mostRecentEvent.getCommand());
+			simpleEvent.setEventId(mostRecentEvent.getEventId());
+
+			// Bloque que actualiza los estados de los otros eventos en pendiente que 
+			// ya no deberan ser servidos en la proxima peticion de recientes.
+			for (ServerEventHistory serverEvent : serverEventsList) {
+				if (serverEvent.equals(serverEventsList.get(0))) {
+					serverEvent.setActionStatus(Constants.EVENT_STATUS_SERVED);
+				} else {
+					serverEvent.setActionStatus(Constants.EVENT_STATUS_CANCELED);
+				}
+			}
+
+			this.serverEventHistoryRepository.saveAllAndFlush(serverEventsList);
+
+			return simpleEvent.toString();
+
+
+		} catch (Exception e) {
+			return e.getMessage();
+		}
+
+	}
+
+}

@@ -70,7 +70,7 @@ public class ProjectorCommonsController {
 
 	@Autowired
 	IServerEventHistoryRepository serverEventHistoryRepository;
-	
+
 	/**
 	 * Creates a server event for a projector with the specified model, classroom,
 	 * and action.
@@ -92,7 +92,7 @@ public class ProjectorCommonsController {
 		String model = projectorDto.getModel();
 		String classroom = projectorDto.getClassroom();
 
-		// Check if any of the parameters is null or empty/blank string.
+		// Check if any of the parameters are null or empty/blank string.
 		if (model == null || model.isBlank() || classroom == null || classroom.isBlank() || commandActionName == null
 				|| commandActionName.isBlank()) {
 			// if blank or null throw exception.
@@ -168,11 +168,10 @@ public class ProjectorCommonsController {
 		return serverEventEntity;
 	}
 
-	
-	private ServerEventHistory createServerEventHistoryFromServerEntity( ServerEvent serverEvent ) {
-		
+	private ServerEventHistory createServerEventHistoryFromServerEntity(ServerEvent serverEvent) {
+
 		ServerEventHistory serverEventHistory = new ServerEventHistory();
-		
+
 		serverEventHistory.setModelName(serverEvent.getCommand().getModelName());
 		serverEventHistory.setAction(serverEvent.getCommand().getAction());
 		serverEventHistory.setCommand(serverEvent.getCommand().getCommand());
@@ -181,12 +180,10 @@ public class ProjectorCommonsController {
 		serverEventHistory.setUser(serverEvent.getUser());
 		serverEventHistory.setDateTime(serverEvent.getDateTime());
 		serverEventHistory.setActionStatus(serverEvent.getActionStatus());
-		
-		return serverEventHistory;		
+
+		return serverEventHistory;
 	}
-	
-	
-	
+
 	/**
 	 * Retrieves a list of all floors recorded in the database.
 	 * 
@@ -352,8 +349,7 @@ public class ProjectorCommonsController {
 	@Transactional
 	@PreAuthorize("hasAnyRole('" + BaseConstants.ROLE_ADMINISTRADOR + "', '" + BaseConstants.ROLE_PROFESOR + "')")
 	@PostMapping(value = "/server-events-batch")
-	public ResponseEntity<?> createServerEventBatch(
-			@AuthenticationPrincipal DtoUsuarioExtended usuario,
+	public ResponseEntity<?> createServerEventBatch(@AuthenticationPrincipal DtoUsuarioExtended usuario,
 			@RequestBody(required = true) ServerEventBatchDto serverEventBatchDto) {
 		try {
 			log.debug("POST request for /server-events-batch received");
@@ -363,7 +359,7 @@ public class ProjectorCommonsController {
 
 			// Extract action name from the request DTO
 			String commandActionName = serverEventBatchDto.getAction();
-			
+
 			// Extract user email from user dto.
 			String userEmail = usuario.getEmail();
 			// Extract list of projectors from the request DTO
@@ -383,13 +379,15 @@ public class ProjectorCommonsController {
 			// Loop through each projector and create a corresponding server event
 			for (ProjectorDto projectorDto : projectorList) {
 				// Create server event for each projector and add it to the list
-				ServerEvent serverEventEntity = this.createServerEventEntity(projectorDto, commandActionName, userEmail);
+				ServerEvent serverEventEntity = this.createServerEventEntity(projectorDto, commandActionName,
+						userEmail);
 				serverEventList.add(serverEventEntity);
 				serverEventHistoryList.add(createServerEventHistoryFromServerEntity(serverEventEntity));
 			}
 
 			// Log the number of events being saved for traceability
-			log.info("Creating and saving {} server events to the database, including history table.", serverEventList.size());
+			log.info("Creating and saving {} server events to the database, including history table.",
+					serverEventList.size());
 
 			// Persist all server events in a single transaction for efficiency
 			this.serverEventRepository.saveAllAndFlush(serverEventList);
@@ -416,22 +414,17 @@ public class ProjectorCommonsController {
 			return ResponseEntity.internalServerError().body(e.getLocalizedMessage());
 		}
 	}
-	
-	
+
 	@GetMapping("/event-states")
 	@PreAuthorize("hasAnyRole('" + BaseConstants.ROLE_ADMINISTRADOR + "', '" + BaseConstants.ROLE_PROFESOR + "')")
-	public ResponseEntity<?> getEventStatusList()
-	{
+	public ResponseEntity<?> getEventStatusList() {
 		return ResponseEntity.ok().body(Constants.POSSIBLE_EVENT_STATUS);
 	}
-	
 
-	
 	@PreAuthorize("hasAnyRole('" + BaseConstants.ROLE_ADMINISTRADOR + "', '" + BaseConstants.ROLE_PROFESOR + "')")
 	@PostMapping("/server-events")
 	public ResponseEntity<?> getEventsPage(@RequestBody(required = false) EventFilterObject eventFilterObject,
-			@PageableDefault(page = 0, size = 10) Pageable pageable)
-	{
+			@PageableDefault(page = 0, size = 10) Pageable pageable) {
 		log.info("POST request for '/server-events' received.");
 
 		log.debug("Classroom: {}", eventFilterObject.getClassroomName());
@@ -443,16 +436,13 @@ public class ProjectorCommonsController {
 		log.debug("getUser: {}", eventFilterObject.getUser());
 		log.debug("getDateTime: {}", eventFilterObject.getDateTime());
 
-
 		Page<TableServerEventDto> pagina = this.serverEventHistoryRepository.getFilteredServerEventDtosPage(pageable,
 				eventFilterObject.getClassroomName(), eventFilterObject.getFloorName(),
 				eventFilterObject.getModelName(), eventFilterObject.getActionStatus());
 
 		log.debug("Recuperados:" + pagina.toList().size());
 
-
 		return ResponseEntity.ok().body(pagina);
 	}
-
 
 }

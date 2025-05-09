@@ -616,6 +616,9 @@ public class ProjectorAdminController {
 			serverEventOverviewDto.setPendingEvents(
 					this.serverEventHistoryRepository.countServerEventsByStatus(Constants.EVENT_STATUS_PENDING));
 
+			
+			log.info(serverEventOverviewDto.toString());
+			
 			// Returning the populated DTO with an HTTP 200 OK response
 			return ResponseEntity.ok().body(serverEventOverviewDto);
 
