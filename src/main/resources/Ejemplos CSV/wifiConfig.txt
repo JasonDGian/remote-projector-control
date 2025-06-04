@@ -1,0 +1,3 @@
+SSID=Lobos-2.4G
+PASSWORD=UL6ACmnV
+SERVER=http://localhost:8086/projectors

@@ -39,5 +39,4 @@ public class CommandId
 	 */
 	private String action;
 
-
 }

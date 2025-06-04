@@ -1,0 +1,19 @@
+action_name,command,model_name
+Power On,110104,ViewSonic PX701-4K
+Power On,110105,BenQ HT3550
+Power On,110106,Epson EB-S41
+Power On,110107,BenQ MW535
+Power On,110108,LG PF50KA
+Power Off,110111,ViewSonic PX701-4K
+Power Off,110112,BenQ HT3550
+Power Off,110113,Epson EB-S41
+Power Off,110114,BenQ MW535
+Power Off,110115,LG PF50KA
+Power Off,110117,Optoma EH412
+Power On,110117,Optoma EH412
+Pause,110117,Optoma EH412
+Play,110117,Optoma EH412
+Up,110117,Optoma EH412
+Down,110117,Optoma EH412
+Right,110117,Optoma EH412
+Left,110117,Optoma EH412

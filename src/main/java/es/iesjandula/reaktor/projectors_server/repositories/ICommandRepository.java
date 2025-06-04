@@ -62,6 +62,8 @@ public interface ICommandRepository extends JpaRepository<Command, CommandId>
 			GROUP BY c.action
 			""")
 	List<ActionDto> findActionsAsDto();
+	
+	Optional<Command> findByModelNameAndCommand(String modelName, String command);
 
 	// ---------------------------- MODEL QUERIES ----------------------------
 
@@ -80,7 +82,7 @@ public interface ICommandRepository extends JpaRepository<Command, CommandId>
 	Optional<ProjectorModelDto> findProjectorModelByModelName(@Param("modelName") String modelName);
 
 	boolean existsByModelName(String modelName);
-
+	
 	// ---------------------------- OTHER QUERIES ----------------------------
 
 	@Query("SELECT COUNT(DISTINCT c.modelName) FROM Command c")

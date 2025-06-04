@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import es.iesjandula.reaktor.base.utils.BaseConstants;
 import es.iesjandula.reaktor.projectors_server.dtos.ResponseDto;
 import es.iesjandula.reaktor.projectors_server.dtos.SimplifiedServerEventDto;
+import es.iesjandula.reaktor.projectors_server.entities.Command;
 import es.iesjandula.reaktor.projectors_server.entities.Projector;
 import es.iesjandula.reaktor.projectors_server.entities.ServerEventHistory;
 import es.iesjandula.reaktor.projectors_server.parsers.interfaces.ICommandParser;
@@ -53,42 +54,36 @@ public class ProjectorRemoteAgentController {
 
 	// -------------------------- SERVER EVENT METHODS -----------------------------
 
-	/**
-	 * Updates the status of a server event.
-	 * 
-	 * This endpoint receives an event ID and a new status, verifies the input,
-	 * checks if the event exists, and updates the event status accordingly.
-	 * 
-	 * @param eventId        The ID of the event to be updated.
-	 * @param eventNewStatus The new status to be set for the event.
-	 * @return A response entity with a status and message indicating the result of
-	 *         the operation.
-	 */
 	@Transactional
 	@PreAuthorize("hasRole('" + BaseConstants.ROLE_CLIENTE_PROYECTOR + "')")
 	@PutMapping(value = "/server-events")
-	public ResponseEntity<?> updateServerEventStatus(@RequestParam(name = "eventId") String eventId,
-			@RequestParam(name = "newStatus") String eventNewStatus) {
-
+	public ResponseEntity<?> updateServerEventStatus(
+			@RequestParam(name = "eventId") String eventId,
+			@RequestParam(name = "rarc") String rarc, 
+			@RequestParam(name = "modelName") String modelName
+			) 
+	{
 		try {
 			// Log the incoming request parameters for the event status update.
-			log.info("PUT request for '/server-events' received with parameters 'Event ID: {}, Event new Status: {}'",
-					eventId, eventNewStatus);
-
-			eventNewStatus = eventNewStatus.toUpperCase().trim();
-
-			log.info("Formatting status string {}", eventNewStatus);
-
+			log.info("PUT request for '/server-events' received with parameters 'Event ID: {}, Response code: {}'",
+					eventId, rarc);
+			
 			// Prepare the response object to send back the status and message.
 			ResponseDto response = new ResponseDto();
 			String message;
+			String eventNewStatus;
+			
+			// Build the requesting model's command entity for comparison.
+			Command command = this.commandRepository.findByModelNameAndCommand(modelName, rarc)
+					.orElseThrow( () -> new ProjectorServerException(404,
+							"El codigo de respuesta y modelo recibidos en la petición no corresponden a ningun comando registrado."));
 
-			// Check if eventId or eventNewStatus is null or blank, and handle error.
-			if (eventId == null || eventId.isBlank() || eventNewStatus == null || eventNewStatus.isBlank()) {
-				message = "Invalid or incorrect parameters in the request.Event Id or Status is blank or null.";
-				log.error(message);
-				throw new ProjectorServerException(499, message); // Error code for invalid parameters.
-			}
+			// Configure the event new status based on code received.
+			eventNewStatus = command.getAction().equalsIgnoreCase(Constants.ACKNWOLEDGE_ACTION_NAME)
+				    ? Constants.EVENT_STATUS_EXECUTED
+				    : Constants.EVENT_STATUS_ERROR;
+
+			log.info("Status to be assigned: {}", eventNewStatus);
 
 			// Validate that the new event status is part of the acceptable list.
 			if (!Constants.POSSIBLE_EVENT_STATUS.contains(eventNewStatus)) {
@@ -99,15 +94,6 @@ public class ProjectorRemoteAgentController {
 
 			// Convert eventId to Long
 			Long eventIdLong = Long.valueOf(eventId);
-
-			// Fetch the corresponding event from the database.
-			/*
-			 * Block replaced by history mechanism. ServerEvent serverEventEntity =
-			 * this.serverEventRepository.findById(eventIdLong).orElseThrow(() -> { String
-			 * messagex = "The server event with ID '" + eventIdLong + "' does not exist.";
-			 * log.error(messagex); return new ProjectorServerException(494, messagex); //
-			 * Error code for event not found. });
-			 */
 
 			// Fetch the corresponding event from the database history.
 			ServerEventHistory serverEventEntity = this.serverEventHistoryRepository.findById(eventIdLong)
@@ -130,12 +116,6 @@ public class ProjectorRemoteAgentController {
 			// Set the response status and message.
 			response.setStatus(Constants.RESPONSE_STATUS_SUCCESS);
 			response.setMessage(message);
-
-			// Persist the updated event entity to the database.
-			/*
-			 * Block replaced by history mechanism.
-			 * this.serverEventRepository.saveAndFlush(serverEventEntity);
-			 */
 
 			this.serverEventHistoryRepository.saveAndFlush(serverEventEntity);
 
@@ -175,23 +155,22 @@ public class ProjectorRemoteAgentController {
 		log.info("GET request for '/server-events' received with parameter '{}'.", projectorClassroom);
 
 		try {
-			
+
 			// Recupera el proyector o lanza error si no existe.
 			Projector projectorEntity = this.projectorRepository.findById(projectorClassroom).orElseThrow(() -> {
 				String message = "ERROR: There are no projectors assigned to this classroom.";
 				log.error(message);
 				return new ProjectorServerException(494, message);
 			});
-			
-			
 
 			// Recupera listado eventos servidor para este proyector que estan en pendiente.
-			List<ServerEventHistory> serverEventsList = this.serverEventHistoryRepository.findRecentPendingServerEventsByClassroom(projectorClassroom);
+			List<ServerEventHistory> serverEventsList = this.serverEventHistoryRepository
+					.findRecentPendingServerEventsByClassroom(projectorClassroom);
 
-			if ( serverEventsList.size() < 1 ) {
+			if (serverEventsList.size() < 1) {
 				return "No tasks";
 			}
-			
+
 			// Evento servidor mas reciente de todos.
 			ServerEventHistory mostRecentEvent = serverEventsList.get(0);
 
@@ -201,7 +180,7 @@ public class ProjectorRemoteAgentController {
 			simpleEvent.setCommandInstruction(mostRecentEvent.getCommand());
 			simpleEvent.setEventId(mostRecentEvent.getEventId());
 
-			// Bloque que actualiza los estados de los otros eventos en pendiente que 
+			// Bloque que actualiza los estados de los otros eventos en pendiente que
 			// ya no deberan ser servidos en la proxima peticion de recientes.
 			for (ServerEventHistory serverEvent : serverEventsList) {
 				if (serverEvent.equals(serverEventsList.get(0))) {
@@ -214,7 +193,6 @@ public class ProjectorRemoteAgentController {
 			this.serverEventHistoryRepository.saveAllAndFlush(serverEventsList);
 
 			return simpleEvent.toString();
-
 
 		} catch (Exception e) {
 			return e.getMessage();

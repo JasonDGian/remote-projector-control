@@ -1,0 +1,20 @@
+model_name,classroom,floor
+Epson EB-S41,0.01,Planta Baja
+BenQ MW535,0.02,Planta Baja
+ViewSonic PX701-4K,0.03,Planta Baja
+Optoma EH412,0.01,Planta Baja
+BenQ HT3550,,Planta Baja
+Epson EB-S41,0.03,Planta Baja
+BenQ MW535,0.01,Planta Baja
+LG PF50KA,0.02,Planta Baja
+LG PF50KA,0.03,Planta Baja
+Epson EB-S41,1.01,Planta 1
+BenQ MW535,1.01,Planta 1
+ViewSonic PX701-4K,1.02,Planta 1
+Optoma EH412,1.03,Planta 1
+BenQ HT3550,2.01,Planta 2
+Epson EB-S41,2.02,Planta 2
+BenQ MW535,2.03,Planta 2
+LG PF50KA,3.01,Planta 3
+BenQ MW535,3.01,Planta 3
+ViewSonic PX701-4K,3.01,Planta 3

@@ -27,6 +27,10 @@ public final class Constants
 	public static final String EVENT_STATUS_CANCELED = "CANCELED";
 	public static final String EVENT_STATUS_ERROR = "ERROR";
 	
+	public static final String ACKNWOLEDGE_ACTION_NAME = "ACK";
+	public static final String ERROR_ACTION_NAME = "ERR";
+	
+	
 	public static final Set<String> POSSIBLE_EVENT_STATUS = Set.of(
 		    EVENT_STATUS_PENDING, 
 		    EVENT_STATUS_CANCELED, 
