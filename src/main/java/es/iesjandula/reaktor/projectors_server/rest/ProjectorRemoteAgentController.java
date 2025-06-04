@@ -54,24 +54,40 @@ public class ProjectorRemoteAgentController {
 
 	// -------------------------- SERVER EVENT METHODS -----------------------------
 
+	/**
+	 * Updates the status of a server event based on the provided response code (RARC) 
+	 * and classroom information.
+	 *
+	 * <p>This endpoint is secured and accessible only to users with the CLIENTE_PROYECTOR role.</p>
+	 *
+	 * @param eventId   the unique identifier of the server event to update
+	 * @param rarc      the response code received from the projector
+	 * @param classroom the classroom identifier where the projector is located
+	 * @return a ResponseEntity containing a success message or an error response if the operation fails
+	 *
+	 * @throws ProjectorServerException if the event ID, command, or status is invalid
+	 */
 	@Transactional
 	@PreAuthorize("hasRole('" + BaseConstants.ROLE_CLIENTE_PROYECTOR + "')")
 	@PutMapping(value = "/server-events")
 	public ResponseEntity<?> updateServerEventStatus(
 			@RequestParam(name = "eventId") String eventId,
 			@RequestParam(name = "rarc") String rarc, 
-			@RequestParam(name = "modelName") String modelName
+			@RequestParam(name = "classroom") String classroom
 			) 
 	{
 		try {
 			// Log the incoming request parameters for the event status update.
-			log.info("PUT request for '/server-events' received with parameters 'Event ID: {}, Response code: {}'",
-					eventId, rarc);
+			log.info("PUT request for '/server-events' received with parameters 'Event ID: {}, Response code: {}', Classroom: {}",
+					eventId, rarc, classroom);
 			
 			// Prepare the response object to send back the status and message.
 			ResponseDto response = new ResponseDto();
 			String message;
 			String eventNewStatus;
+			
+			// Fetch the name of the model from the 
+			String modelName = this.projectorRepository.findProjectorModelNameByClassroom(classroom);
 			
 			// Build the requesting model's command entity for comparison.
 			Command command = this.commandRepository.findByModelNameAndCommand(modelName, rarc)

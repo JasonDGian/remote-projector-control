@@ -2,5 +2,5 @@ action_name,command,modelname
 Power On,2A 20 30 20 49 52 20 30 30 31 0D,Acer X1228H
 Power Off,2A 20 30 20 49 52 20 30 30 32 0D,Acer X1228H
 Fail Test,2A 20 31 20 49 52 20 31 31 32 0D,Acer X1228H
-ACK,*000,Acer X1228H
-ERR,*001,Acer X1228H
+ACK,* 000,Acer X1228H
+ERR,* 001,Acer X1228H

@@ -48,6 +48,14 @@ public interface IProjectorRepository extends JpaRepository<Projector, String> {
             ORDER BY pro.model, pro.floor, pro.classroom 
         """)
     public Page<ProjectorInfoDto> findProjectorsOrderedByModel(Pageable pageable, String classroom, String floor, String model);
+    
+    
+    @Query("""
+    		SELECT pro.model
+    		FROM Projector pro
+    		WHERE pro.classroom = :classroom
+    		""")
+    public String findProjectorModelNameByClassroom( @Param( "classroom" ) String classroom );
 
     /**
      * Retrieves a paginated list of ProjectorInfoDto objects, ordered by floor name and classroom name.
