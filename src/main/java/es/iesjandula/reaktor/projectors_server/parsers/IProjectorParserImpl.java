@@ -147,6 +147,7 @@ public class IProjectorParserImpl implements IProjectorParser {
 			newProjector.setClassroom(classroomName);
 			newProjector.setModel(modelName);
 			newProjector.setFloor(floorName);
+			newProjector.setStatus(Constants.PROJECTOR_OFF);
 
 			// add to list to save.
 			projectorsList.add(newProjector);

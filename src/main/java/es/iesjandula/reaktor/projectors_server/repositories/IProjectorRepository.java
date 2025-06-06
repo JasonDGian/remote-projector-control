@@ -39,15 +39,17 @@ public interface IProjectorRepository extends JpaRepository<Projector, String> {
             SELECT new es.iesjandula.reaktor.projectors_server.dtos.ProjectorInfoDto( 
                 pro.model, 
                 pro.classroom, 
-                pro.floor
+                pro.floor,
+                pro.status
             ) 
             FROM Projector pro 
             WHERE ( :classroom IS NULL OR pro.classroom = :classroom ) 
             AND ( :floor IS NULL OR pro.floor = :floor ) 
             AND ( :model IS NULL OR pro.model = :model ) 
+            AND ( :status IS NULL OR pro.status = :status ) 
             ORDER BY pro.model, pro.floor, pro.classroom 
         """)
-    public Page<ProjectorInfoDto> findProjectorsOrderedByModel(Pageable pageable, String classroom, String floor, String model);
+    public Page<ProjectorInfoDto> findProjectorsOrderedByModel(Pageable pageable, String classroom, String floor, String model, String status);
     
     
     @Query("""
@@ -71,15 +73,17 @@ public interface IProjectorRepository extends JpaRepository<Projector, String> {
             SELECT new es.iesjandula.reaktor.projectors_server.dtos.ProjectorInfoDto( 
                 pro.model, 
                 pro.classroom,
-                pro.floor
+                pro.floor,
+                pro.status
             ) 
             FROM Projector pro 
             WHERE ( :classroom IS NULL OR pro.classroom = :classroom ) 
             AND ( :floor IS NULL OR pro.floor = :floor ) 
             AND ( :model IS NULL OR pro.model = :model )
+            AND ( :status IS NULL or pro.status LIKE :status )
             ORDER BY pro.floor, pro.classroom 
         """)
-    public Page<ProjectorInfoDto> findProjectorsOrderedByFloorAndClassroom(Pageable pageable, String classroom, String floor, String model);
+    public Page<ProjectorInfoDto> findProjectorsOrderedByFloorAndClassroom(Pageable pageable, String classroom, String floor, String model, String status);
 
     /**
      * Retrieves a list of ProjectorDto objects for a given classroom.

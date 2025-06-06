@@ -216,6 +216,7 @@ public class ProjectorAdminController {
 			@RequestParam(value = "classroom", required = false) String classroom,
 			@RequestParam(value = "floor", required = false) String floor,
 			@RequestParam(value = "model", required = false) String model,
+			@RequestParam(value = "status", required = false) String status,
 			@PageableDefault(page = 0, size = 15) Pageable pageable) {
 		try {
 
@@ -229,11 +230,11 @@ public class ProjectorAdminController {
 			// Determine ordering strategy based on criteria
 			if (orderByModel) {
 				log.debug("Applying ordering by model name.");
-				projectors = projectorRepository.findProjectorsOrderedByModel(pageable, classroom, floor, model);
+				projectors = projectorRepository.findProjectorsOrderedByModel(pageable, classroom, floor, model, status);
 			} else {
 				log.debug("Applying default ordering by floor and classroom.");
 				projectors = projectorRepository.findProjectorsOrderedByFloorAndClassroom(pageable, classroom, floor,
-						model);
+						model, status);
 			}
 
 			log.info("Successfully retrieved {} projectors.", projectors.getTotalElements());

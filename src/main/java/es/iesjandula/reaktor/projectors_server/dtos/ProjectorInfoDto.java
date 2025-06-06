@@ -33,4 +33,6 @@ public class ProjectorInfoDto
 	 * The name of the floor where the projector is located.
 	 */
 	private String floorname;
+	
+	private String status;
 }

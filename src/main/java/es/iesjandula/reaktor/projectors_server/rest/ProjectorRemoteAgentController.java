@@ -166,7 +166,7 @@ public class ProjectorRemoteAgentController {
 	@PreAuthorize("hasAnyRole('" + BaseConstants.ROLE_ADMINISTRADOR + "', '" + BaseConstants.ROLE_CLIENTE_PROYECTOR
 			+ "')")
 	@GetMapping(value = "/server-events")
-	public String serveCommandToController(@RequestParam(required = true) String projectorClassroom) {
+	public String serveCommandToController(@RequestParam(required = true) String projectorClassroom, @RequestParam(required = true) String projectorStatus) {
 		// Log the incoming request for processing models.
 		log.info("GET request for '/server-events' received with parameter '{}'.", projectorClassroom);
 
@@ -182,6 +182,26 @@ public class ProjectorRemoteAgentController {
 			// Recupera listado eventos servidor para este proyector que estan en pendiente.
 			List<ServerEventHistory> serverEventsList = this.serverEventHistoryRepository
 					.findRecentPendingServerEventsByClassroom(projectorClassroom);
+			
+			// actualiza estado encendido proyector.
+			// Fetch the name of the model from the 
+			String modelName = this.projectorRepository.findProjectorModelNameByClassroom(projectorClassroom);
+			
+			// Build the requesting model's command entity for comparison.
+			Command statusCommand = this.commandRepository.findByModelNameAndCommand(modelName, projectorStatus)
+					.orElseThrow( () -> new ProjectorServerException(404,
+							"El codigo de estado de la petición no corresponden a ningun comando registrado."));
+			
+			if ( statusCommand.getAction().equalsIgnoreCase(Constants.LAMP_ON )) {
+				projectorEntity.setStatus(Constants.PROJECTOR_ON);
+			}
+			else if (statusCommand.getAction().equalsIgnoreCase(Constants.LAMP_OFF )) {
+				projectorEntity.setStatus(Constants.PROJECTOR_OFF);
+			}
+			else {
+				throw new ProjectorServerException( 499, "Error al registrar el estado del proyector." );
+			}
+			
 
 			if (serverEventsList.size() < 1) {
 				return "No tasks";
@@ -207,7 +227,7 @@ public class ProjectorRemoteAgentController {
 			}
 
 			this.serverEventHistoryRepository.saveAllAndFlush(serverEventsList);
-
+			
 			return simpleEvent.toString();
 
 		} catch (Exception e) {

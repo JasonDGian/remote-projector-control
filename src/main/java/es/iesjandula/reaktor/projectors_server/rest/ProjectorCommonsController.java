@@ -279,9 +279,11 @@ public class ProjectorCommonsController {
 			// Fetch the list of actions from the repository
 			List<ActionDto> actions = this.commandRepository.findActionsAsDto();
 						
-			// Remove ACK and ERROR response codes.
+			// Remove ACK and ERROR and LAMP Status response codes.
 			actions.remove(new ActionDto(Constants.ACKNWOLEDGE_ACTION_NAME));
 			actions.remove(new ActionDto(Constants.ERROR_ACTION_NAME));
+			actions.remove(new ActionDto(Constants.LAMP_OFF));
+			actions.remove(new ActionDto(Constants.LAMP_ON));
 
 			// Return the list of actions with an HTTP 200 OK status
 			log.info("Successfully retrieved {} action(s).", actions.size());

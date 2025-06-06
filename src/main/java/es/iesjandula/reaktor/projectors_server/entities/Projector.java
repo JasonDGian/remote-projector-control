@@ -42,6 +42,9 @@ public class Projector
 	
 	@Column ( name = "model") 
 	private String model;
+	
+	@Column ( name = "status")
+	private String status;
 
 	/**
 	 * List of server events associated with the projector.
