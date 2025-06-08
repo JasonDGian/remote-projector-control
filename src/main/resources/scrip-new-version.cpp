@@ -48,7 +48,9 @@
 // ---------------------------------------------
 // Debugging Configuration
 // ---------------------------------------------
+#define WAIT_TIME 500
 #define DEBUG 1
+#define RUNMODE 0
 
 #if DEBUG == 1
 #define debug(x) Serial.print(x)
@@ -59,7 +61,7 @@
 #endif
 
 // ---------------------------------------------
-// WiFi configuration variables.
+// WiFi & URL configuration variables.
 // ---------------------------------------------
 String WifiSSID;
 String WifiPassword;
@@ -80,7 +82,7 @@ String projectorClassroomMetadataFilePath = "/projectorConfigMetadata.txt";
 bool localClassroomFileExists = false;
 bool sdClassroomFileExists = false;
 String lampStatusInquireCommand = "";
-
+String lampStatus = "";
 // ---------------------------------------------
 // Handled events variables.
 // ---------------------------------------------
@@ -94,7 +96,6 @@ String commandInstruction;
 // ---------------------------------------------
 String responseData;  // Stores the response data.
 int responseCode;     // Stores the response code.
-String lampStatus = ""; 
 
 // ---------------------------------------------
 // LittleFS and SDFS variables.
@@ -171,51 +172,53 @@ void setup() {
     digitalWrite(sdFSLed, LOW);
   }
 
+  delay(200);
+
   // -------------------------------
   // Load configuration from files.
   // -------------------------------
 
+  delay(200);
+
   // Loads the configuration stored in the file of the local FS.
   loadConfigFromFile(wifiConfigFilePath);
 
+  delay(200);
+
   // Loads the projector identification string in the file of the local FS
   loadProjectorInfoFromFile(projectorClassroomFilePath);
+
+  delay(200);
 
   // -------------------------------
   // Connect to WiFi
   // -------------------------------
   connectToWifi();
 
+  delay(200);
+
   // -------------------------------
   // Configure device RTC block (needs network)
   // -------------------------------
   syncTimeToNtpServer();
+
+  delay(200);
 
   // -------------------------------
   // Initializing RS232 port.
   // -------------------------------
   MySerial.begin(RS232BaudRate, SERIAL_8N1, rxRS232Port, txRS232Port);  // baudrate, config, RX pin, TX pin
 
-
   // -------------------------------
-  // Ask the server for the lamp status command.
-  // Wait one second after the function completes, try again if failed.
+  // Ask the server for the lamp status inquiry command.
+  // Wait half a second after the function completes, try again if failed.
   // -------------------------------
-  int retries = 0;
-  const int maxRetries = 5;
+  getLampStatusInquiryCommand();
 
-  while (lampStatusInquireCommand.length() == 0 && retries < maxRetries) {
-      lampStatusInquireCommand = getStatusInquiryCommand();
-      delay(500);
-      retries++;
-  }
+  // Initial lamp status inquiry for first task request params.
+  getProjectorStatus();  // ---------------------------------------------------------------------------------------  TODO comprobar si aqui la recoge con el proyector.
 
-  if (lampStatusInquireCommand.length() == 0) {
-    printInterfaceSentenceBox("ERROR: Failed to retrieve lamp status command after multiple attempts.");
-  }
-  else{
-    printInterfaceSentenceBox("Lamp status inquiry command successfully retreived.");
-  }
+
 
   // -------------------------------
   // End of Setup
@@ -229,7 +232,7 @@ void loop() {
   // Listen for serial input to trigger a reboot
 
   // If the board is in debug mode, it will wait for instructions and display debug messages..
-  if (DEBUG == 1) {
+  if (RUNMODE == 1) {
     if (Serial.available()) {
       char received = Serial.read();
 
@@ -241,16 +244,17 @@ void loop() {
 
       // Prints the stored values of all the variables.
       if (received == 'v') {
-        printInterfaceTitle("Showing variables data.");
-        printInterfaceSentences("WifiSSID", WifiSSID);
-        printInterfaceSentences("WifiPassword", WifiPassword);
-        printInterfaceSentences("urlProjectors", urlProjectors);
-        printInterfaceSentences("urlFirebase", urlFirebase);
-        printInterfaceSentences("xClientId", xClientId);
-        printInterfaceSentences("projectorClassroom", projectorClassroom);
-        printInterfaceSentences("lampStatusInquireCommand", lampStatusInquireCommand);
-        printInterfaceSentences("eventId", eventId);
-        printInterfaceSentences("commandInstruction", commandInstruction);
+        printInterfaceTitle("SHOWING STORED VARIABLES VALUES.");
+        printInterfaceSentences("WifiSSID - ", WifiSSID);
+        printInterfaceSentences("WifiPassword - ", WifiPassword);
+        printInterfaceSentences("urlProjectors - ", urlProjectors);
+        printInterfaceSentences("urlFirebase - ", urlFirebase);
+        printInterfaceSentences("xClientId - ", xClientId);
+        printInterfaceSentences("projectorClassroom - ", projectorClassroom);
+        printInterfaceSentences("lampStatusInquireCommand - ", lampStatusInquireCommand);
+        printInterfaceSentences("lampStatus - ", lampStatus);
+        printInterfaceSentences("eventId - ", eventId);
+        printInterfaceSentences("commandInstruction - ", commandInstruction);
         printInterfaceBottomLine();
       }
 
@@ -258,173 +262,163 @@ void loop() {
       if (received == 't') {
 
         // -------------------------------------------------
-        // SEND REQUEST TO SERVER
+        // FORCE SEND REQUEST TO SERVER
         // -------------------------------------------------
-
         printInterfaceTitle("Inquiring for tasks...");
 
         // Reset the variables.
         responseCode = 0;
         responseData = "";
 
+        getProjectorStatus();  // Recovers the lamp status.  // ----------------------------------------------------------   obtener el estado TODO
+        //lampStatus = "Lamp 1";  // -------------------------------------------------------------------------------------------  BORRAR
+
+        printInterfaceSentences("Lamp current status: ", lampStatus);
+
+        // Uses the value of lamp status to update projector status.
         callServer(responseCode, responseData);
 
         // If the response is OKAY.
         if (responseCode == 200) {
-
-          printInterfaceSentence("HTTP Response 200 OKAY");
 
           // -------------------------------------------------
           // VALUES EXTRACTION FROM JSON RESPONSE
           // -------------------------------------------------
 
           // Saca el ID del evento
-          eventId = "";  // Reinicia valores.
-          eventId = getResponseValue(responseData, "eventId");
+          eventId = "UNSET";  // Reinicia valores.
+          eventId = getValueFromString(responseData, "eventId");
 
           // Saca la instrucción.
-          commandInstruction = "";  // Reinicia valores.
-          commandInstruction = getResponseValue(responseData, "commandInstruction");
-
-          printInterfaceSentence("Event ID: " + eventId);
-          printInterfaceSentence("Instruction: " + commandInstruction);
-
+          commandInstruction = "UNSET";  // Reinicia valores.
+          commandInstruction = getValueFromString(responseData, "commandInstruction");
 
           // -------------------------------------------------
-          // CONVERSION TO BYTE ARRAY
+          // CONVERSION DE CADENA A ARRAY HEXA
           // -------------------------------------------------
 
-          // Almacena la longitud final del arreglo.
-          int numBytes = 0;
+          if (commandInstruction.length() > 0) {
 
-          // Array de bytes donde se almacen la instrucción.
-          byte* byteArray = hexStringToByteArray(commandInstruction, numBytes);
+            // -------------------------------------------------
+            // TRANSMISION DE LOS VALORES AL PUERTO SERIE.
+            // -------------------------------------------------
 
-          printInterfaceSentences("Cantidad de bytes: ", String(numBytes));
+            String deviceResponseCode = "";
 
-          // Print byte array only if in debug mode.
-          if (DEBUG == 1) {
+            deviceResponseCode = writeToSerialPort(commandInstruction);  // Importante recibir en formato texto. No hexadecimal.
 
-            debug("| Instruccion parseada: ");
+            // -------------------------------------------------
+            // Actualización del registro en BBDD con el resultado de la respuestaOrden.
+            // -------------------------------------------------
+            updateEvent(eventId, deviceResponseCode);
+            //updateEvent(eventId, "*000");
 
-            // Imprime los bytes (rellena con 0 los <F).
-            for (int i = 0; i < numBytes; i++) {
-              if (byteArray[i] < 0x10) Serial.print("0");
-              Serial.print(byteArray[i], HEX);
-              Serial.print(" ");
-            }
 
-            printRepeatedChar(" ", debugInterfaceLength - 25 - commandInstruction.length());
-            debugln("|");
-          }
-
-          // -------------------------------------------------
-          // TRANSMISION DE LOS VALORES AL PUERTO SERIE.
-          // -------------------------------------------------
-
-          // Escribe al puerto los datos especificando su longitud (implementacion iterada del write normal).
-          MySerial.write(byteArray, numBytes);
-
-          MySerial.read(byteArray, numBytes);
-
-          // -------------------------------------------------
-          // RECEPCIÓN DE LOS VALORES AL PUERTO SERIE.
-          // -------------------------------------------------
-          if (MySerial.available()) {
-            String unitResponse = MySerial.readStringUntil('\n');  // o '\r' dependiendo del protocolo del proyector
-            Serial.println("Respuesta del proyector:");
-            Serial.println(unitResponse);
+          } else {
+            printInterfaceSentence("WARNING: Code 200 but no valid instruction received.");
           }
         }
-
 
         if (responseCode != 200) {
           printInterfaceSentence("WARNING: HTTP Response code: " + String(responseCode));
         }
-
-        delay(100);
-
-        // -------------------------------------------------
-        // RECEPCION DE LOS VALORES AL PUERTO SERIE.
-        // -------------------------------------------------
-
         printInterfaceBottomLine();
       }
 
       if (received == 'u') {
-        updateEvent(eventId, "* 000");
+        updateEvent(eventId, "*000");
+      }
+      if (received == 'l') {
+        getProjectorStatus();
+        debugln(lampStatus);
       }
     }
-  } 
+  }
   // -------------------------------------------------
   // Block that runs when the board is NOT in DEBUG mode.
   // -------------------------------------------------
   else {
+    // -------------------------------------------------
+    // FORCE SEND REQUEST TO SERVER
+    // -------------------------------------------------
+    printInterfaceTitle("Inquiring for tasks...");
 
-    // -------------------------------------------------
-    // SEND REQUEST TO SERVER AND HANDLE RESPONSE
-    // -------------------------------------------------
+    // Reset the variables.
     responseCode = 0;
     responseData = "";
 
+    getProjectorStatus();  // Recovers the lamp status.  // ----------------------------------------------------------   obtener el estado TODO
+    //lampStatus = "Lamp 1";  // -------------------------------------------------------------------------------------------  BORRAR
+
+    printInterfaceSentences("Lamp current status: ", lampStatus);
+
+    // Uses the value of lamp status to update projector status.
     callServer(responseCode, responseData);
 
     // If the response is OKAY.
     if (responseCode == 200) {
-      
+
       // -------------------------------------------------
       // VALUES EXTRACTION FROM JSON RESPONSE
       // -------------------------------------------------
 
-      // Extract Event ID
-      eventId = "";  // Reset value
-      eventId = getResponseValue(responseData, "eventId");
+      // Saca el ID del evento
+      eventId = "UNSET";  // Reinicia valores.
+      eventId = getValueFromString(responseData, "eventId");
 
-      // Extract command instruction.
-      commandInstruction = "";  // Reset value
-      commandInstruction = getResponseValue(responseData, "commandInstruction");
-
-      // -------------------------------------------------
-      // CONVERSION TO BYTE ARRAY FOR SERIAL COMMS
-      // -------------------------------------------------
-
-      // Almacena la longitud final del arreglo.
-      int numBytes = 0;
-
-      // Array de bytes donde se almacen la instrucción.
-      byte* byteArray = hexStringToByteArray(commandInstruction, numBytes);
+      // Saca la instrucción.
+      commandInstruction = "UNSET";  // Reinicia valores.
+      commandInstruction = getValueFromString(responseData, "commandInstruction");
 
       // -------------------------------------------------
-      // TRANSMIT VALUES TO RS232 COMMS PORT.
+      // CONVERSION DE CADENA A ARRAY HEXA
       // -------------------------------------------------
 
-      // Send instruction array with iterated variant of Serial Write method.
-      MySerial.write(byteArray, numBytes);
+      if (commandInstruction.length() > 0) {
 
-      // -------------------------------------------------
-      // READ VALUES FROM RS232 COMMS PORT.
-      // -------------------------------------------------
-      String unitResponse;
+        // -------------------------------------------------
+        // TRANSMISION DE LOS VALORES AL PUERTO SERIE.
+        // -------------------------------------------------
 
-      if (MySerial.available()) {
-        unitResponse = MySerial.readStringUntil('\r');  // o '\n' dependiendo del protocolo del proyector
+        String deviceResponseCode = "";
+
+        deviceResponseCode = writeToSerialPort(commandInstruction);  // Importante recibir en formato texto. No hexadecimal.
+
+        // -------------------------------------------------
+        // Actualización del registro en BBDD con el resultado de la respuestaOrden.
+        // -------------------------------------------------
+        updateEvent(eventId, deviceResponseCode);
+        //updateEvent(eventId, "*000");
+
+
+      } else {
+        printInterfaceSentence("WARNING: Code 200 but no valid instruction received.");
       }
-
-      // Wait to give the backend time to process.
-      delay(5000);
-
-      // Send event update request to backend based on unit response.
-      updateEvent(eventId, unitResponse);
-
-      delay(25000);
-
     }
 
     if (responseCode != 200) {
       printInterfaceSentence("WARNING: HTTP Response code: " + String(responseCode));
     }
+    printInterfaceBottomLine();
+
+    delay(20000);
+  }
+}
+
+// Funcion que permite reintentar una conexión por si falla.
+bool beginWithRetry(HTTPClient& http, const String& url, int maxRetries = 5) {
+  int attempts = 0;
+  while (attempts < maxRetries) {
+    if (http.begin(url)) {
+      return true;
+    }
+    printInterfaceSentences("Intento fallido al iniciar conexión HTTP. Reintentando... intento ", String(attempts + 1));
+    attempts++;
+    delay(500);  // Espera entre reintentos
   }
 
+  printInterfaceSentence("ERROR: No se pudo establecer conexión HTTP después de varios intentos.");
+  return false;
 }
 
 // ---------------------------------------------
@@ -459,15 +453,13 @@ bool initializeLittleFS() {
 
 
 // ---------------------------------------------
-// Asks the server for the Status Inquiry command for this specific projector.
-// This string is used to inquire lamp status of the projector.
+// Retrieves configuration parameters from the server for a specific projector.
 // ---------------------------------------------
-String getStatusInquiryCommand(){
+String getConfigParamsFromServer() {
 
   // ---------------------------------------------
   // PRELIMINARY VALIDATIONS
   // ---------------------------------------------
-  /*
   if (urlProjectors.length() == 0) {
     printInterfaceSentence("ERROR: 'urlProjectors' is not set. Aborting request.");
     return "";
@@ -486,24 +478,35 @@ String getStatusInquiryCommand(){
   if (WiFi.status() != WL_CONNECTED) {
     printInterfaceSentence("ERROR: No WiFi connection. Aborting request.");
     return "";
-  }*/
+  }
 
   // ---------------------------------------------
   // REQUEST SETUP
   // ---------------------------------------------
-  HTTPClient http;  // HTTP client for the request.
+
+  printInterfaceSeparator();
+  printInterfaceSentence("REQUESTING JWT.");
+  printInterfaceSeparator();
+
+  String authToken = getJwt();
+
+  HTTPClient http;         // HTTP client for the request.
+  http.setTimeout(20000);  // configura una ventana de tiempo mas amplia para la respuesta.
 
   // Reinicia las variables referenciadas.
   String httpResponseData = "";
   int httpResponseCode = 0;
 
-  /*String authToken = getJwt();*/
-
-  if (authToken.length() == 0)
-  {
-    printInterfaceSentence("ERROR: Cannot get JWT from the server");
+  if (authToken.length() == 0) {
+    printInterfaceSentence("ERROR: Cannot get JWT from the server during SIQ query.");
     return "";
   }
+
+  delay(200);
+
+  printInterfaceSeparator();
+  printInterfaceSentence("CONFIG PARAMS REQUEST TO SERVER.");
+  printInterfaceSeparator();
 
   String completeURL = urlProjectors + "/config-params?projectorClassroom=" + projectorClassroom;  // Configures the complete request URL.
 
@@ -513,42 +516,86 @@ String getStatusInquiryCommand(){
   printInterfaceSentences("-- Projector ID: ", projectorClassroom);
   printInterfaceSeparator();
 
-  http.begin(completeURL);                // uso temporal hasta que se pruebe el certificado.
-  //String bearer = "Bearer " + authToken;  // Authorization header.
-  //http.addHeader("Authorization", bearer);
+  //http.begin(completeURL);
+
+  // Llamada a funcion que intenta varias veces la conexión controlando resultado.
+  if (!beginWithRetry(http, completeURL)) {
+    return "";  // Falló incluso tras varios intentos
+  }
+
+  // uso temporal hasta que se pruebe el certificado.
+  String bearer = "Bearer " + authToken;  // Authorization header.
+  http.addHeader("Authorization", bearer);
 
   httpResponseCode = http.GET();  // Send the request.
 
   if (httpResponseCode >= 200 && httpResponseCode < 300) {
 
-    printInterfaceSentence("INQUIRY COMMAND: Response received.");
+    printInterfaceSentence("CONFIG PARAMS: Response received.");
 
     printInterfaceSentences("- HTTP Response Code:", String(httpResponseCode));
 
-    httpResponseData = http.getString();
+    if (httpResponseCode == 204) {
 
-    if (httpResponseData.length() > 0) {
-
-      printInterfaceSentences("- Server Response:", String(httpResponseData));
+      printInterfaceSentence("WARNING: No Content in response body.");
 
     } else {
-      printInterfaceSentence("WARNING: Received an empty response from the server.");
+      httpResponseData = http.getString();
+      printInterfaceSentence("- Server Response:");
+      String sub = String(httpResponseData).substring(0, debugInterfaceLength - 7);
+      printInterfaceSentences("-- ", String(sub));
+
+      printInterfaceSeparator();
+      printInterfaceSentence("CONFIG PARAMS: Server inquiry process completed.");
+      printInterfaceSeparator();
     }
 
   } else {
-    printInterfaceSentences("ERROR: HTTP request failed. Code: ", String(httpResponseCode));
+    printInterfaceSeparator();
+    printInterfaceSentences("CONFIG PARAMS ERROR: HTTP request failed. Code: ", String(httpResponseCode));
+    printInterfaceSeparator();
   }
 
   http.end();  // Free memory resources.
 
-  printInterfaceSeparator();
-  printInterfaceSentence("INQUIRY COMMAND: Server inquiry process completed.");
-  printInterfaceBottomLine();
-
   return httpResponseData;
-
 }
 
+
+// ---------------------------------------------
+// Sends a request to the server to retrieve the lamp status command.
+// Calls getConfigParamsFromServer() to obtain a JSON response,
+// extracts the 'command' field containing the instruction string,
+// ---------------------------------------------
+void getLampStatusInquiryCommand() {
+
+  int retries = 0;
+  const int maxRetries = 5;
+
+  String jsonResponse = "";  // Stores the json response from the server.
+
+  printInterfaceTitle("Status Inquiry Command request.");
+
+  // Recupera la respuesta del servidor para sacar luego la cadena equivalente a la instruccion de SIC
+  jsonResponse = getConfigParamsFromServer();
+
+  // Check if the response is empty.
+  if (jsonResponse.length() == 0) {
+    printInterfaceSentence("ERROR: Empty SIC jsonResponse string.");
+    printInterfaceBottomLine();
+    return;
+  }
+
+  // Extract from jsonResponse the value of key 'command': contains instruction string.
+  lampStatusInquireCommand = getValueFromString(jsonResponse, "command");
+
+  if (lampStatusInquireCommand.length() == 0) {
+    printInterfaceSentenceBox("ERROR: Failed to retrieve lamp status command after multiple attempts.");
+  } else {
+    printInterfaceSentences("SUCCESS: Instruction retreived: ", lampStatusInquireCommand);
+  }
+  printInterfaceBottomLine();
+}
 
 // ---------------------------------------------
 // Initializes the SD card via SPI and checks for accessibility by opening its root directory.
@@ -719,8 +766,7 @@ void loadProjectorInfoFromFile(String projectorFilePath) {
 
     if (line.startsWith("projectorClassroom=")) {
       projectorClassroom = line.substring(19);
-    }
-    else if (line.startsWith("x-client-id=")) {
+    } else if (line.startsWith("x-client-id=")) {
       xClientId = line.substring(12);
     }
   }
@@ -738,10 +784,9 @@ void connectToWifi() {
   debug("│ ");
 
   // Conectar sin password mediante filtrado mac.
-  if ( WifiPassword.length() == 0 ){
-     WiFi.begin(WifiSSID.c_str());
-  }
-  else{
+  if (WifiPassword.length() == 0) {
+    WiFi.begin(WifiSSID.c_str());
+  } else {
     WiFi.begin(WifiSSID.c_str(), WifiPassword.c_str());
   }
 
@@ -802,20 +847,33 @@ void setFileContentToStringVariable(String& variable, const String& filePath, co
 // Displays an error message if time synchronization fails.
 // ---------------------------------------------
 void syncTimeToNtpServer() {
+  printInterfaceTitle("Network Time Protocol");
   configTzTime(TZ_INFO, "pool.ntp.org", "time.nist.gov", "time.google.com");  // Configurar NTP
   printInterfaceSentence("INFO: Synchronizing with NTP...");
 
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    printInterfaceSentence("ERROR: Failed to obtain date and time from NTP server.");
-    return;
+  const int maxRetries = 5;
+  int attempt = 0;
+
+  while (attempt < maxRetries) {
+    if (getLocalTime(&timeinfo)) {
+      // Éxito: imprimir hora formateada y salir
+      char formattedDate[30];
+      strftime(formattedDate, sizeof(formattedDate), "%Y-%m-%d %H:%M:%S", &timeinfo);
+      printInterfaceSentences("- Date and time set successfully: ", formattedDate);
+      printInterfaceBottomLine();
+      return;
+    }
+
+    // Fallo: mostrar intento fallido y esperar un poco
+    printInterfaceSentences("WARNING: Attempt ", String(attempt + 1) + " failed. Retrying...");
+    delay(1000);  // Espera 1 segundo antes de intentar otra vez
+    attempt++;
   }
 
-  // Print readable date and time
-  char formattedDate[30];
-  strftime(formattedDate, sizeof(formattedDate), "%Y-%m-%d %H:%M:%S", &timeinfo);  // Format the time
-
-  printInterfaceSentences("- Date and time set successfully: ", formattedDate);  // Print formatted date and time
+  // Si llegamos aquí, fallaron todos los intentos
+  printInterfaceSentence("ERROR: Failed to obtain date and time from NTP server after multiple attempts.");
+  printInterfaceBottomLine();
 }
 
 // ---------------------------------------------
@@ -880,7 +938,7 @@ void writeTimestampToFile(unsigned long timestamp, String filePath) {
   // Close the file
   file.close();
 
-  debugln("INFO: Timestamp successfully written to file '" + filePath + "'.");
+  printInterfaceSentences("INFO: Timestamp successfully written to file '", filePath);
 }
 
 // ---------------------------------------------
@@ -931,6 +989,63 @@ unsigned long readTimestampFromFile(String filePath) {
 }
 
 // ---------------------------------------------
+// Funcion que escribe una cadena al puerto serie.
+// ---------------------------------------------
+String writeToSerialPort(String instruction) {
+  instruction = replaceEndingNewline(instruction);
+
+  /*while (MySerial.available()) {
+    Serial.println("Discarding bytes: " + MySerial.readStringUntil('\r'));
+  }*/
+
+  // Condición de guardia para la comunicacion.
+  while (!MySerial.availableForWrite()) {
+    Serial.println("W: not ready yet");
+    delay(WAIT_TIME);
+  }
+
+  // Envía la instrucción recibida en formato cadena..
+  MySerial.write(instruction.c_str());
+
+  //Leer respuesta a la instruccion ACK / ERR-REF
+  return readFromSerialPort();
+}
+
+
+// ---------------------------------------------
+// Waits until data is available on the MySerial port, then
+// reads and returns the incoming string until a carriage return.
+// ---------------------------------------------
+String readFromSerialPort() {
+  while (!MySerial.available()) {
+    Serial.println("R: not ready yet");
+    delay(WAIT_TIME);
+  }
+  return MySerial.readStringUntil('\r');
+}
+
+
+// ---------------------------------------------
+// Sends a command to the projector to inquire about its lamp
+// status, waits for a response, and stores the result.
+// ---------------------------------------------
+void getProjectorStatus() {
+  // Sends the "lamp status?" instruction.
+  writeToSerialPort(lampStatusInquireCommand);
+
+  // Reads the response from the unit.
+  lampStatus = readFromSerialPort();
+
+  // En caso de no recibir respuesta dentro del tiempo límite.
+  if (lampStatus == "") {
+    Serial.println("ERROR: No response from the projector.");
+    return;
+  } else {
+    Serial.println("Estado de la lampara: " + lampStatus);
+  }
+}
+
+// ---------------------------------------------
 // Sends an HTTPS GET request to a server with authorization and retrieves the response.
 // Performs basic validations, builds the URL, and handles the HTTP response and errors.
 // ---------------------------------------------
@@ -965,32 +1080,46 @@ void callServer(int& httpResponseCode, String& httpResponseData) {
   }
 
   // ---------------------------------------------
-  // REQUEST SETUP
+  // GET JWT TOKEN FOR REQUEST
   // ---------------------------------------------
-  HTTPClient http;  // HTTP client for the request.
-
-  // Reinicia las variables referenciadas.
-  httpResponseCode = 0;
-  httpResponseData = "";
-
   String authToken = getJwt();
 
-  if (authToken.length() == 0)
-  {
-    printInterfaceSentence("ERROR: Cannot get JWT from the server");
+  authToken.trim();
+
+  if (authToken.length() == 0) {
+    printInterfaceSentence("ERROR: Could not get JWT from the server");
     return;
   }
 
-  String completeURL = urlProjectors + "/server-events/?projectorClassroom=" + projectorClassroom;  // Configures the complete request URL.
+  // ---------------------------------------------
+  // REQUEST SETUP
+  // ---------------------------------------------
+  HTTPClient http;  // HTTP client for the request.
+  httpResponseCode = 0;
+  httpResponseData = "";
+
+  getProjectorStatus();
+
+  String encodedLampStatus = urlEncode(lampStatus.c_str());
+
+  String completeURL = urlProjectors + "/server-events?projectorClassroom=" + projectorClassroom + "&projectorStatus=" + encodedLampStatus;  // Configures the complete request URL.
 
   printInterfaceSentence("Request details: ");
   printInterfaceSentences("-- Server Address: ", urlProjectors);
   printInterfaceSentences("-- Specific endpoint: ", "/server-events");
   printInterfaceSentences("-- Projector ID: ", projectorClassroom);
+  printInterfaceSentences("-- Projector Status: ", lampStatus);
   printInterfaceSeparator();
 
-  http.begin(completeURL);                // uso temporal hasta que se pruebe el certificado.
+  //http.begin(completeURL);  ------------------------------------------------------------------------------ Sostituido a favor de un mecanismo con 5 reintentos de conexion.
+
+  // Llamada a funcion que intenta varias veces la conexión.
+  if (!beginWithRetry(http, completeURL)) {
+    return;  // Falló incluso tras varios intentos
+  }
+
   String bearer = "Bearer " + authToken;  // Authorization header.
+
   http.addHeader("Authorization", bearer);
 
   httpResponseCode = http.GET();  // Send the request.
@@ -1001,24 +1130,26 @@ void callServer(int& httpResponseCode, String& httpResponseData) {
 
     printInterfaceSentences("- HTTP Response Code:", String(httpResponseCode));
 
-    httpResponseData = http.getString();
-    if (httpResponseData.length() > 0) {
-
-      printInterfaceSentences("- Server Response:", String(httpResponseData));
-
+    // Check if the body of the response has content.
+    if (httpResponseCode == 204) {
+      printInterfaceSentence("WARNING: No Content in response body.");
     } else {
-      printInterfaceSentence("WARNING: Received an empty response from the server.");
-    }
+      httpResponseData = http.getString();
 
+      printInterfaceSentence("- Server Response:");
+      String sub = String(httpResponseData).substring(0, debugInterfaceLength - 7);
+      printInterfaceSentences("-- ", String(sub));
+
+      printInterfaceSeparator();
+      printInterfaceSentence("TASK: Server inquiry process completed.");
+      printInterfaceBottomLine();
+    }
   } else {
     printInterfaceSentences("ERROR: HTTP request failed. Code: ", String(httpResponseCode));
+    printInterfaceBottomLine();
   }
 
   http.end();  // Free memory resources.
-
-  printInterfaceSeparator();
-  printInterfaceSentence("TASK: Server inquiry process completed.");
-  printInterfaceBottomLine();
 }
 
 // ---------------------------------------------
@@ -1026,6 +1157,8 @@ void callServer(int& httpResponseCode, String& httpResponseData) {
 // Validates inputs, builds the URL, and returns the server's response string.
 // ---------------------------------------------
 String updateEvent(String eventId, String deviceResponseCode) {
+
+  printInterfaceTitle("Update event status request.");
 
   // ---------------------------------------------
   // PRELIMINARY VALIDATIONS
@@ -1065,42 +1198,54 @@ String updateEvent(String eventId, String deviceResponseCode) {
     return "";
   }
 
+  printInterfaceSeparator();
+  printInterfaceSentence("REQUESTING JWT.");
+  printInterfaceSeparator();
   String authToken = getJwt();
 
-  if (authToken.length() == 0)
-  {
+  delay(200);
+
+  if (authToken.length() == 0) {
     printInterfaceSentence("ERROR: Cannot get JWT from the server");
     return "";
   }
 
-  String httpResponseData;
+  printInterfaceSeparator();
+  printInterfaceSentence("UPDATE REQUEST TO SERVER.");
+  printInterfaceSeparator();
 
-  HTTPClient http;
-
-  debug("INFO: Requesting ");
+  String httpResponseData = "";
+  HTTPClient httpUpdate;
+  httpUpdate.setTimeout(20000);
 
   String encodedResponseCode = urlEncode(deviceResponseCode.c_str());
+  String encodedProjectorClassroom = urlEncode(projectorClassroom.c_str());
 
-  String completeURL = urlProjectors + "?eventId=" + eventId + "&rarc=" + encodedResponseCode + "&classroom=" + projectorClassroom;
-  debugln(completeURL);
+  String completeURL = urlProjectors + "/server-events?eventId=" + eventId + "&rarc=" + encodedResponseCode + "&classroom=" + encodedProjectorClassroom;
+  Serial.println("GET: " + completeURL);
 
-  http.begin(completeURL);  // Insecure connection without SSL.
+  // Llamada a funcion que intenta varias veces la conexión.
+  if (!beginWithRetry(httpUpdate, completeURL)) {
+    return "";  // Falló incluso tras varios intentos
+  }
 
-  String bearer = "Bearer ";
-  bearer += authToken;  // Usa String solo aquí
+  String bearer = "Bearer " + authToken;
 
-  http.addHeader("Authorization", bearer);
+  httpUpdate.addHeader("Authorization", bearer);
 
-  int httpResponseCode = http.PUT("");  // Este parguela requiere un parametro minimo aunque sea nulo.
+  int httpResponseCode = httpUpdate.PUT("");  // Este parguela requiere un parametro minimo aunque sea nulo (ver docu ofi).
 
   if (httpResponseCode >= 200 && httpResponseCode < 300) {
-    debugln("UPDATE EVENT: Response received.");
-    debug("- HTTP Response Code:");
+    printInterfaceSentence("UPDATE EVENT: Response received.");
+    printInterfaceSentence("- HTTP Response Code:");
 
-    httpResponseData = http.getString();
+    httpResponseData = httpUpdate.getString();
     if (httpResponseData.length() > 0) {
+
       printInterfaceSentence("- Server Response:");
-      printInterfaceSentence(httpResponseData);
+      String sub = String(httpResponseData).substring(0, debugInterfaceLength - 7);
+      printInterfaceSentences("-- ", String(sub));
+
     } else {
       debugln("WARNING: Received an empty response from the server.");
     }
@@ -1109,34 +1254,37 @@ String updateEvent(String eventId, String deviceResponseCode) {
     printInterfaceSentences("ERROR: HTTP request failed. Code: ", String(httpResponseCode));
   }
 
-  http.end();     // Free memory resources.
+  httpUpdate.end();  // Free memory resources.
 
-  debugln("TASK: Server inquiry process finished.");
+  printInterfaceSentence("UPDATE EVENT: Server inquiry process finished.");
 
   return httpResponseData;
 }
 
+
 String getJwt() {
-  
-  HTTPClient http;  // HTTP client for the request.
 
   // ---------------------------------------------
   // REQUEST SETUP
   // ---------------------------------------------
-  // Reinicia las variables referenciadas.
+  HTTPClient httpJwt;         // HTTP client for the request.
+  httpJwt.setTimeout(20000);  // configura una ventana de tiempo mas amplia para la respuesta.
   String httpResponseData = "";
+  String authToken = "";
 
-  String authToken = "" ;
-
+  // Log request details.
   printInterfaceSentence("Request details: ");
   printInterfaceSentences("-- Server Address: ", urlFirebase);
   printInterfaceSentences("-- X-CLIENT-ID: ", xClientId);
 
-  http.begin(urlFirebase);                // uso temporal hasta que se pruebe el certificado.
+  // Llamada a funcion que intenta varias veces la conexión.
+  if (!beginWithRetry(httpJwt, urlFirebase)) {
+    return "";  // Falló incluso tras varios intentos
+  }
 
-  http.addHeader("X-CLIENT-ID", xClientId);
+  httpJwt.addHeader("X-CLIENT-ID", xClientId);
 
-  int httpResponseCode = http.POST("");  // Send the request.
+  int httpResponseCode = httpJwt.POST("");  // Send the request.
 
   if (httpResponseCode >= 200 && httpResponseCode < 300) {
 
@@ -1144,10 +1292,15 @@ String getJwt() {
 
     printInterfaceSentences("- HTTP Response Code:", String(httpResponseCode));
 
-    httpResponseData = http.getString();
+    httpResponseData = httpJwt.getString();
     if (httpResponseData.length() > 0) {
 
-      printInterfaceSentences("- Server Response:", String(httpResponseData));
+      //printInterfaceSentences("- Server Response:", String(httpResponseData));
+
+      printInterfaceSentence("- Server Response:");
+      String sub = String(httpResponseData).substring(0, debugInterfaceLength - 7);
+      printInterfaceSentences("-- ", String(sub));
+
       authToken = httpResponseData;
 
     } else {
@@ -1158,7 +1311,7 @@ String getJwt() {
     printInterfaceSentences("ERROR: HTTP request failed. Code: ", String(httpResponseCode));
   }
 
-  http.end();  // Free memory resources.
+  httpJwt.end();  // Free memory resources.
 
   return authToken;
 }
@@ -1193,43 +1346,29 @@ String getResponseValue(String text, String key) {
   return text.substring(startIndex, endIndex);
 }
 
-// ---------------------------------------------
-// Converts a hex string (with optional spaces) into a dynamically allocated byte array.
-// Returns the byte array and sets outputLength to the number of bytes converted.
-// ---------------------------------------------
-byte* hexStringToByteArray(const String& input, int& outputLength) {
+// ------- TEST
+String getValueFromString(const String& data, const String& key) {
+  int keyPos = data.indexOf("\"" + key + "\":");
+  if (keyPos == -1) return "CLAVE NO ENCONTRADA";
 
-  int len = input.length();
-  int byteIndex = 0;
+  int valueStart = keyPos + key.length() + 3;  // posición después de ":"
 
-  int maxBytes = len / 2;                  // estimación máxima de bytes
-  byte* outputArray = new byte[maxBytes];  // reserva dinámica.
-
-  // por cada caracter en la cadena.
-  for (int i = 0; i < len;) {
-
-    // Si hay espacios entre los hexadecimales, los ignora
-    while (i < len && input[i] == ' ') i++;
-
-    // Verifica si hay dos chars disponibles desde la i.
-    if (i + 1 < len) {
-
-      String hexByte = input.substring(i, i + 2);  // Extraer dos caracteres
-
-      outputArray[byteIndex++] = strtoul(hexByte.c_str(), NULL, 16);  // Convierte las cadena extraida a un byte entero en base 16.
-
-      i += 2;  // avanzar 2 caracteres
-
-    } else {
-      // Finaliza si no hay 2 caracteres más
-      break;
+  // Verificar si el valor comienza con comillas (string) o no (número u otro)
+  if (data.charAt(valueStart) == '"') {
+    // Valor es string entre comillas
+    int startQuote = valueStart + 1;
+    int endQuote = data.indexOf("\"", startQuote);
+    if (endQuote == -1) return "ERROR DE FORMATO";
+    return data.substring(startQuote, endQuote);
+  } else {
+    // Valor es número u otro sin comillas: leer hasta , o }
+    int endPos = data.indexOf(",", valueStart);
+    if (endPos == -1) {
+      endPos = data.indexOf("}", valueStart);
+      if (endPos == -1) return "ERROR DE FORMATO";
     }
+    return data.substring(valueStart, endPos);
   }
-
-  // Guarda la cantidad de bytes procesados
-  outputLength = byteIndex;
-  // Devuelve la REFERENCIA AL PUNTERO.
-  return outputArray;
 }
 
 // ---------------------------------------------
@@ -1307,4 +1446,18 @@ void printInterfaceSentenceBox(String sentence) {
   printInterfaceTopLine();
   printInterfaceSentence(sentence);
   printInterfaceBottomLine();
+}
+
+// TODO Esta funcion solo está aqui para resolver temporalmente el problema de como se reciben las strings desde el backend.
+// La idea seria no tener que usar esta funcion, que puede crear problemas. Observar el comportamiento del endpoint a la hora de servir los comandos al microcontrolador.
+String replaceEndingNewline(String input) {
+
+
+  if (input.endsWith("\\n")) {
+    input = input.substring(0, input.length() - 3) + '\n';  // Elimina "\\n" y añade '\r'
+  } else if (input.endsWith("\\r")) {
+    input = input.substring(0, input.length() - 3) + '\r';  // Elimina "\\n" y añade '\r'
+  }
+
+  return input;
 }
