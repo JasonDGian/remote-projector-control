@@ -157,8 +157,8 @@ public class ProjectorRemoteAgentController {
 	 * Handles GET requests to the "/server-events" endpoint.
 	 * <p>
 	 * This method processes a projector's reported status and returns the most recent
-	 * pending server event assigned to that projector's classroom. It also updates the 
-	 * projector's power status (ON/OFF) based on the received status code, and updates 
+	 * pending server event assigned to that projector's classroom. It also updates the
+	 * projector's power status (ON/OFF) based on the received status code, and updates
 	 * the state of all pending server events accordingly.
 	 * </p>
 	 *
@@ -174,19 +174,19 @@ public class ProjectorRemoteAgentController {
 	@PreAuthorize("hasAnyRole('" + BaseConstants.ROLE_ADMINISTRADOR + "', '" +  BaseConstants.ROLE_CLIENTE_PROYECTOR + "')")
 	@GetMapping(value = "/server-events")
 	public ResponseEntity<?> serveCommandToController(@RequestParam(required = true) String projectorClassroom,
-			@RequestParam(required = true) String projectorStatus) 
+			@RequestParam(required = true) String projectorStatus)
 	{
 
 		// Log the incoming request for processing models.
 		log.info("GET request for '/server-events' received with classroom '{}' and satus {}.", projectorClassroom, projectorStatus);
 
 		try {
-			
+
 			// Recupera el proyector o lanza error si no existe.
-			Projector projectorEntity = this.projectorRepository.findById(projectorClassroom).orElseThrow(() 
+			Projector projectorEntity = this.projectorRepository.findById(projectorClassroom).orElseThrow(()
 					-> new ProjectorServerException(494, "ERROR: There are no projectors assigned to this classroom.")
 			);
-			
+
 			log.info(projectorEntity.toString());
 
 			// Recupera listado eventos servidor para este proyector que estan en pendiente.
@@ -195,33 +195,33 @@ public class ProjectorRemoteAgentController {
 
 			// Actualiza estado encendido/apagado del proyector.
 			String modelName = this.projectorRepository.findProjectorModelNameByClassroom(projectorClassroom);
-			
+
 			log.info(modelName);
 
 			// Build the requesting model's command entity for comparison.
 			Command statusCommand = this.commandRepository.findByModelNameAndCommand(modelName, projectorStatus)
-					.orElseThrow(() 
+					.orElseThrow(()
 							-> new ProjectorServerException(404,"El codigo de estado de la petición no corresponden a ningun comando registrado.")
 							);
-			
+
 			log.info(statusCommand.toString());
-			
+
 			if (statusCommand.getAction().equalsIgnoreCase(Constants.LAMP_ON)) {
-				
+
 				projectorEntity.setStatus(Constants.PROJECTOR_ON);
-				
+
 			} else if (statusCommand.getAction().equalsIgnoreCase(Constants.LAMP_OFF)) {
-				
+
 				projectorEntity.setStatus(Constants.PROJECTOR_OFF);
-				
+
 			} else {
-				
+
 				throw new ProjectorServerException(499, "Error al registrar el estado del proyector. Estado desconocido.");
-				
+
 			}
-			
+
 			log.info(projectorEntity.getStatus());
-			
+
 			// Guarda el estado del proyector antes de continuar..
 			this.projectorRepository.saveAndFlush(projectorEntity);
 
@@ -269,7 +269,7 @@ public class ProjectorRemoteAgentController {
 				new ProjectorServerException(494, "ERROR: There are no projectors assigned to this classroom.")
 			);
 
-			// Busca el comando relativo a la interrogación de estado del proyector. 
+			// Busca el comando relativo a la interrogación de estado del proyector.
 			// Es necesario servir este comando a los proyectores cuando se inicializan para que sepan "como preguntar" el estado de la lampara.
 			Command statusInquiryCommand = this.commandRepository
 					.findByModelNameAndAction(projectorEntity.getModel(), Constants.STATUS_INQUIRY_COMMAND)
